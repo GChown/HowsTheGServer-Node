@@ -1,0 +1,12 @@
+.content {
+    margin: auto;
+    width: 50%;
+}
+h3 {
+    font-family: 'Droid Serif', sans-serif;
+}
+p {
+    margin-left: 5px;
+    font-family: 'Noto Sans', sans-serif;
+    text-indent: 1em;
+}
