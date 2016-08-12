@@ -1,12 +1,20 @@
-.content {
-    margin: auto;
-    width: 50%;
+body {
+    font-family: 'Lato', sans-serif;
 }
-h3 {
-    font-family: 'Droid Serif', sans-serif;
+.container-fluid {
+    margin: auto;
+    width: 64%;
+}
+.navbar-header {
+    padding-left: 6px;
 }
 p {
     margin-left: 5px;
-    font-family: 'Noto Sans', sans-serif;
     text-indent: 1em;
+}
+.name {
+    font-size: 19pt;
+}
+.commenttext {
+     
 }

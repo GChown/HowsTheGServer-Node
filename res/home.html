@@ -1,0 +1,10 @@
+<script src="home.js"></script>
+    <h1>Home Page</h1>
+    <div id="count"></div>
+    <input type="text" id="rating"></input>
+<button id="sendVote">Send vote</button>
+<hr>
+<h3>Comments</h3>
+<div ng-controller="commentsController">
+    <p ng-repeat="comment in comments"> {{ comment }} </p>
+        </div>
