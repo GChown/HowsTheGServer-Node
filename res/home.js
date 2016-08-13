@@ -17,7 +17,7 @@ $(function() {
                 window.clearTimeout(intervalID);
             }
         }, 3000);
-        console.log('Connected to websocket');
+        //console.log('Connected to websocket');
     };
 
     websocket.onclose = function() {

@@ -4,35 +4,48 @@
         <!--<script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=" crossorigin="anonymous"></script>--!>
 <script src="http://code.jquery.com/jquery-3.1.0.js" integrity="sha256-slogkvB1K3VOkzAI8QITxV3VzpOnkeNVsKvtkYLMjfk="   crossorigin="anonymous"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"></link>
-<meta name="viewport" content="width=device-width, initial-scale=1"></meta>
-<link href="https://fonts.googleapis.com/css?family=Noto+Sans|Lato|Open+Sans|Droid+Serif|Lato" rel="stylesheet"></link>
 <script src="https://apis.google.com/js/platform.js" async defer></script>
-<meta name="google-signin-client_id" content="539757594504-gk5pemcpa45ts0p1i1uuctpc25j5qkt0.apps.googleusercontent.com"></meta>
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.js"></script>
-<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular-route.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular-route.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+<meta name="google-signin-client_id" content="539757594504-gk5pemcpa45ts0p1i1uuctpc25j5qkt0.apps.googleusercontent.com"></meta>
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"></link>
+<link href="https://fonts.googleapis.com/css?family=Noto+Sans|Lato|Open+Sans|Droid+Serif|Lato" rel="stylesheet"></link>
 <link href="/stylesheet.css" rel="stylesheet"></link>
 <script src="route.js"></script>
 <title>How's The G?</title>
-    <base href="/">
-    </head>
-    <body ng-controller="mainController">
-        <div class="container">
-            <nav class="navbar navbar-default">
+<base href="/">
+</head>
+<body ng-controller="mainController">
+    <div class="container">
+        <nav class="navbar navbar-default">
+            <div class="container-fluid">
                 <div class="navbar-header">
-                    <a class="navbar-brand" href="/">How's The G?</a>
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                        <span class="sr-only"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="#">How's The G?</a>
                 </div>
-                <ul class="nav navbar-nav navbar-right">
-                    <li><a href="home"><i class="fa fa-home"></i> Home</a></li>
-                    <li><a href="about"><i class="fa fa-about"></i>About</a></li>
-                </ul>
-            </nav>
-            <div style="float:right;" id="gsignin">Sign in with Google to vote or comment: 
-                <div class="g-signin2" data-onsuccess="onSignIn"></div></div>
-            <div id="main">
-                <div ng-view>
-                    {{ message }}
-                </div>
+                <div id="navbar" class="navbar-collapse collapse" aria-expanded="false" style="height: 1px;">
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="active"><a href="/">Home</a></li>
+                        <li><a ng-href="/about">About</a></li>
+                    </ul>
+                </div><!--/.nav-collapse -->
+            </div><!--/.container-fluid -->
+        </nav>
+        <div id="main">
+            <div ng-view>
             </div>
         </div>
-    </html>
+    </div>
+    <footer class="footer">
+        <div class="container">
+            <div id="gsignin">Sign in with Google to vote or comment: 
+                <div class="g-signin2" data-onsuccess="onSignIn"></div></div>
+        </div>
+    </footer>
+</html>

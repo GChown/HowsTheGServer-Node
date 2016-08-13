@@ -37,9 +37,13 @@ module.exports = function(app, connection){
     });
 
     app.post('/comment', function(req, res){
+        //Check to see if they put in the required params first
+        if(typeof req.body.token == 'undefined' || typeof req.body.text == 'undefined'){
+                    res.send(JSON.stringify("Fail"));
+        }else{
         verifyToken(req.body.token, function(isValid){
             var insert = "INSERT INTO comment(text, timesent, googleid) VALUES(?, NOW(), ?);";
-            connection.query(insert, [req.text, isValid.sub], function(err, rows, fields) {
+            connection.query(insert, [req.body.text, isValid.sub], function(err, rows, fields) {
                 if(err) console.log(err);
                 if(rows.affectedRows == 1){
                     res.send(JSON.stringify("Success"));
@@ -48,15 +52,37 @@ module.exports = function(app, connection){
                 }
             });
         });
+        }
+    });
+
+    //Returns comments since :date, a UNIX timestamp
+    //Note that mysql unix_timestamp is seconds, so multiply by 1000 to get miliseconds, comparable with javascript version
+    app.get('/comment/:date', function(req, res){
+        var commentQuery = "SELECT text, timesent, comment.usrname FROM comment JOIN user ON comment.googleid = user.googleid WHERE UNIX_TIMESTAMP(timesent) * 1000 > ?";
+            connection.query(commentQuery, req.params.date, function(err, rows, fields) {
+                if(err){
+                    console.log(err);
+                }else{
+                    var returning = [];
+                    rows.forEach(function(data){
+                        returning.push({
+                                text: data.text,
+                                timesent: data.timesent,
+                                usrname: data.usrname
+                        });
+                    });
+                    res.send(JSON.stringify(returning));
+                }
+            });
+        
     });
 
     app.post('/rate', function(req, res) {
         //Check the vote is in valid range
         if(req.body.vote > 5 || req.body.vote < 0){
             res.send('error : invalid range');
-            return;
             //Might not have a request token
-        }else if(typeof req.body.token !== 'undefined'){
+        }else if(typeof req.body.token !== 'undefined' || typeof req.body.vote !== 'undefined'){
             verifyToken(req.body.token, function(isValid){
                 if(isValid){
                     //Query inserts vote to table
@@ -107,7 +133,7 @@ module.exports = function(app, connection){
         //Read current tokens from file
         fs.readFile('certs.json', 'utf8', function (err,data) {
             if (err) {
-                //The file is messed up, download a new one
+                //The file is messed up, download a new one then call this again
                 downloadCerts(function(){
                     verifyToken(token, callback);
                 });
