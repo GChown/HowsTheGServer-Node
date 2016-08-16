@@ -13,16 +13,12 @@ module.exports = function(app, connection){
                 clientID: config.google.clientID,
         });
     });
-
+    //Array of connected sockets
+    var socketList = [];
     // Votes websocket endpoint
     app.ws('/votes', function (ws) {
-        ws.on('message', function (msg) {
-            getScores(function(response){
-                ws.send(JSON.stringify(response));
-            });
-        });
+        socketList.push(ws);
     });
-
 
     // Votes http
     app.get('/votes', function (req, res) {
@@ -37,44 +33,50 @@ module.exports = function(app, connection){
     });
 
     app.post('/comment', function(req, res){
+        //Return will be either fail or success
+        var fail = JSON.stringify("Fail"),
+        success = JSON.stringify("Success");
         //Check to see if they put in the required params first
         if(typeof req.body.token == 'undefined' || typeof req.body.text == 'undefined'){
-                    res.send(JSON.stringify("Fail"));
+            res.send(fail);
         }else{
-        verifyToken(req.body.token, function(isValid){
-            var insert = "INSERT INTO comment(text, timesent, googleid) VALUES(?, NOW(), ?);";
-            connection.query(insert, [req.body.text, isValid.sub], function(err, rows, fields) {
-                if(err) console.log(err);
-                if(rows.affectedRows == 1){
-                    res.send(JSON.stringify("Success"));
-                }else{
-                    res.send(JSON.stringify("Fail"));
-                }
+            //Check if their token is valid
+            verifyToken(req.body.token, function(isValid){
+                var insertTime = Date.now() / 1000;
+                var insert = "INSERT INTO comment(text, timesent, googleid) VALUES(?, FROM_UNIXTIME(?), ?);";
+                connection.query(insert, [req.body.text, insertTime, isValid.sub], function(err, rows, fields) {
+                    if(err) console.log(err);
+                    if(rows.affectedRows == 1){
+                        //Send comments to each websocket
+                        //TODO: make this better
+                        returning = {
+                            text: req.body.text,
+                            timesent: insertTime,
+                            usrname: isValid.sub
+                        };
+                        var sending = { type: 'comment' , comments : returning };
+                        socketList.forEach(function(ws){
+                            //Check if socket is connected - if not remove it
+                            if(ws.readyState == 1){
+                                ws.send(JSON.stringify(sending));
+                            }else{
+                                socketList.splice(socketList.indexOf(ws), 1);
+                            }
+                        });
+                    }else{
+                        res.send(fail);
+                    }
+                });
             });
-        });
+            res.send(success);
         }
     });
 
     //Returns comments since :date, a UNIX timestamp
-    //Note that mysql unix_timestamp is seconds, so multiply by 1000 to get miliseconds, comparable with javascript version
     app.get('/comment/:date', function(req, res){
-        var commentQuery = "SELECT text, timesent, comment.usrname FROM comment JOIN user ON comment.googleid = user.googleid WHERE UNIX_TIMESTAMP(timesent) * 1000 > ?";
-            connection.query(commentQuery, req.params.date, function(err, rows, fields) {
-                if(err){
-                    console.log(err);
-                }else{
-                    var returning = [];
-                    rows.forEach(function(data){
-                        returning.push({
-                                text: data.text,
-                                timesent: data.timesent,
-                                usrname: data.usrname
-                        });
-                    });
-                    res.send(JSON.stringify(returning));
-                }
-            });
-        
+        getComments(req.params.date, function(response){
+            res.send(JSON.stringify(response));
+        });
     });
 
     app.post('/rate', function(req, res) {
@@ -95,6 +97,16 @@ module.exports = function(app, connection){
                                 console.log('Error inserting vote: ');
                                 console.dir(err);
                             }else if(rows.affectedRows == 1){
+                                //Notify all webSocket listening that there is a new vote
+                                getScores(function(score){
+                                    socketList.forEach(function(ws){
+                                        if(ws.readyState == 1){
+                                            ws.send(JSON.stringify({type:'vote', score:score}));
+                                        }else{
+                                            socketList.splice(socketList.indexOf(ws), 1);
+                                        }
+                                    });
+                                });
                                 res.send(JSON.stringify("Success"));
                             }else{
                                 res.send(JSON.stringify("Fail"));
@@ -138,49 +150,48 @@ module.exports = function(app, connection){
                     verifyToken(token, callback);
                 });
             }else{
-            data = JSON.parse(data);
-            //The header's key ID will be in the pem file. 
-            //If not, we need to get a new copy of the public certs.
-            if(typeof data[header.kid] != 'undefined'){
-                //check signature and return;
-                jwt.verify(token, data[header.kid],
-                    { algorithms : header.alg }, function(err, decoded) {
-                        if(err){
-                            var d = new Date();
-                            console.log("Error logging in: " + d.toTimeString());
-                            console.dir(err);
-                            callback();
-                        } else {
-                            if(decoded.aud == config.google.clientID){
-                                callback(decoded);
-                            }else{
+                data = JSON.parse(data);
+                //The header's key ID will be in the pem file. 
+                //If not, we need to get a new copy of the public certs.
+                if(typeof data[header.kid] != 'undefined'){
+                    //check signature and return;
+                    jwt.verify(token, data[header.kid],
+                        { algorithms : header.alg }, function(err, decoded) {
+                            if(err){
+                                var d = new Date();
+                                console.log("Error logging in: " + d.toTimeString());
+                                console.dir(err);
                                 callback();
+                            } else {
+                                if(decoded.aud == config.google.clientID){
+                                    callback(decoded);
+                                }else{
+                                    callback();
+                                }
                             }
-                        }
-                });
-            } else{
-                downloadCerts(function(){
-                    verifyToken(token, callback);  
-                });
-            }
+                    });
+                } else{
+                    downloadCerts(function(){
+                        verifyToken(token, callback);  
+                    });
+                }
             }
         });
         //When the key is not in the file, need to download another one
         function downloadCerts(callback){
-                //The key is not in the file, so we need to get a new one.
-                var file = fs.createWriteStream("certs.json");
-                var request = https.get('https://www.googleapis.com/oauth2/v1/certs', function(response) {
-                    response.pipe(file);
-                    file.on('finish', function() {
-                        console.log('Finished getting file from server');
-                        file.close(callback);  // close() is async, call cb after close completes.
-                    });
-                }).on('error', function(err) { 
-                // Something went wrong
-                    fs.unlink(dest); // Delete the file
-                    if (callback) callback(err.message);
+            //The key is not in the file, so we need to get a new one.
+            var file = fs.createWriteStream("certs.json");
+            var request = https.get('https://www.googleapis.com/oauth2/v1/certs', function(response) {
+                response.pipe(file);
+                file.on('finish', function() {
+                    console.log('Finished getting file from server');
+                    file.close(callback);  // close() is async, call cb after close completes.
                 });
-
+            }).on('error', function(err) { 
+            // Something went wrong
+            fs.unlink(dest); // Delete the file
+            if (callback) callback(err.message);
+            });
         }
     }
 
@@ -209,4 +220,30 @@ module.exports = function(app, connection){
             callback(returning);
         });
     }
+
+    function getComments(time, callback){
+        //Note that mysql unix_timestamp is seconds, so multiply by 1000 to get miliseconds, comparable with javascript version
+        var commentQuery = "SELECT text, timesent, comment.usrname FROM comment JOIN user ON comment.googleid = user.googleid WHERE UNIX_TIMESTAMP(timesent) * 1000 > ?";
+        connection.query(commentQuery, time, function(err, rows, fields) {
+            if(err){
+                console.log(err);
+                callback();
+            }else{
+                var returning = [];
+                var rowsInserted = 0;
+                //Hackish way of adding a callback to forEach:
+                rows.forEach(function(data, index, array){
+                    returning.push({
+                            text: data.text,
+                            timesent: data.timesent,
+                            usrname: data.usrname
+                    });
+                    rowsInserted++;
+                    if(rowsInserted === array.length){
+                        callback(returning);
+                    }
+                });
+            }
+        });
+    };
 };

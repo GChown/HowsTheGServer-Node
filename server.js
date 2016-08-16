@@ -1,11 +1,9 @@
-var http = require('http');
-var express = require('express');
-var app = express();
-//Page renderer
-var jade = require('pug');
-var bodyParser = require("body-parser");
-var mysql = require('mysql');
-var jws = require('jsrsasign');
+var http = require('http'),
+express = require('express'),
+app = express(),
+bodyParser = require("body-parser"),
+mysql = require('mysql'),
+jws = require('jsrsasign');
 const fs = require('fs');
 
 app.use(bodyParser.urlencoded({ extended: false }));
