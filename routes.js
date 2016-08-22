@@ -25,47 +25,56 @@ module.exports = function(app, connection){
     });
     //Insert comment
     app.post('/comment', function(req, res){
-        //Return will be either fail or success
-        var fail = JSON.stringify("Fail"),
-        success = JSON.stringify("Success");
         //Check to see if they put in the required params first
         if(typeof req.body.token == 'undefined' || typeof req.body.text == 'undefined'){
-            res.send(fail);
+            //Send Bad Request error (malformed syntax request)
+            res.status(400).send('Malformed Request');
         }else{
             //Check if their token is valid
             verifyToken(req.body.token, function(isValid){
+                if(!isValid){
+                    //Send 401 Unauthorized error
+                    res.status(401).send('Login failed');
+                }else{
                 var insertTime = Date.now() / 1000;
                 var insert = "INSERT INTO comment(text, timesent, googleid) VALUES(?, FROM_UNIXTIME(?), ?);";
                 connection.query(insert, [req.body.text, insertTime, isValid.sub], function(err, rows, fields) {
-                    if(err) console.log(err);
+                    if(err){
+                        console.log('Error inserting comment: ' + err);
+                        res.status(500).send('Internal error inserting comment');
+                    }
                     if(rows.affectedRows == 1){
                         //Get commenter's username
                         var userQuery = "SELECT username FROM user WHERE googleid = ?";
                         connection.query(userQuery, isValid.sub, function(err, rows, fields){
-                            if(err) console.log(err);
+                            if(err){
+                                console.log('Error finding username: ' + err);
+                            }else{
                             var username = rows[0].username;
+                            console.log(username);
                             //Send comments to each websocket
                             returning = {
                                 text: req.body.text,
                                 timesent: insertTime,
                                 username: username
                             };
-                            var sending = { type: 'comment' , comments : returning };
-                            socketList.forEach(function(ws){
-                                //Check if socket is connected - if not remove it
-                                if(ws.readyState == 1){
-                                    ws.send(JSON.stringify(sending));
-                                }else{
-                                    socketList.splice(socketList.indexOf(ws), 1);
-                                }
-                            });
+                            var sending = {
+                                type: 'comment' ,
+                                comments : returning 
+                            };
+                            sendToSockets(sending);
+                            res.status(201).send('Success');
+                            }
                         });
                     }else{
-                        res.send(fail);
+                        //There was no comment inserted
+                        console.log('No comment inserted:');
+                        console.dir(req.body.text);
+                        res.status(500).send('Internal error');
                     }
                 });
+            }
             });
-            res.send(success);
         }
     });
 
@@ -80,11 +89,15 @@ module.exports = function(app, connection){
     app.post('/rate', function(req, res) {
         //Check the vote is in valid range
         if(req.body.vote > 5 || req.body.vote < 0){
-            res.send('error : invalid range');
+            //Send Bad Request error (malformed syntax request)
+            res.status(400).send('Vote out of valid range');
             //Might not have a request token
         }else if(typeof req.body.token !== 'undefined' || typeof req.body.vote !== 'undefined'){
             verifyToken(req.body.token, function(isValid){
-                if(isValid){
+                if(!isValid){
+                    //send Unauthorized access error 401
+                    res.status(401).send('Login failed');
+                }else{
                     //Insert vote to table
                     var insert = "INSERT INTO vote(googleid, vote_l, date)" + 
                         " VALUES(?, ?, DATE(NOW())) ON DUPLICATE KEY UPDATE vote_l = ?";
@@ -97,32 +110,32 @@ module.exports = function(app, connection){
                             }else if(rows.affectedRows == 1){
                                 //Notify all webSocket listening that there is a new vote
                                 getScores(function(score){
-                                    socketList.forEach(function(ws){
-                                        if(ws.readyState == 1){
-                                            ws.send(JSON.stringify({type:'vote', score:score}));
-                                        }else{
-                                            socketList.splice(socketList.indexOf(ws), 1);
-                                        }
-                                    });
+                                    var sending = {
+                                            type : 'vote',
+                                            score : score
+                                    };
+                                    sendToSockets(sending);
                                 });
-                                res.send(JSON.stringify("Success"));
+                                res.status(201).send('Success');
                             }else{
-                                res.send(JSON.stringify("Fail"));
+                                res.status(500).send('Internal error');
                             }
                     });
                 }
             });
         }else{
-            res.send('error : no token sent');
+            //No login token sent
+            res.status(400).send('No login token sent');
         }
     });
     //Verifies token for Google OAuth
     app.post('/verifyToken/', function(req, res){
         verifyToken(req.body.token, function(idToken){
             if(idToken){
-                res.send('Verified');
+                res.status(500).send('Verified');
             }else{
-                res.send('Not verified');
+                //Send error 401
+                res.status(401).send('Not verified');
             }
 
         });
@@ -133,11 +146,11 @@ module.exports = function(app, connection){
     //callback with no parameter if the token is not valid.
     //TODO: return HTTP unauthorized error code if token not valid
     function verifyToken(token, callback){
-        //Check that there are 3 tokens
         if(typeof token === 'undefined'){
             callback();
             return;
         }
+        //Check that there are 3 tokens
         var segments = token.split('.');
         if (segments.length !== 3) {
             throw new Error('Not enough or too many segments in token_id');
@@ -250,4 +263,15 @@ module.exports = function(app, connection){
             }
         });
     };
+
+    //Send data to all websockets. If socket isn't connected, remove it from list.
+    function sendToSockets(data){
+        socketList.forEach(function(ws){
+            if(ws.readyState == 1){
+                ws.send(JSON.stringify(data));
+            }else{
+                socketList.splice(socketList.indexOf(ws), 1);
+            }
+        });
+    }
 };

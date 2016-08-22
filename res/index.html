@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html ng-app="HTGApp">
     <head>
-        <!--<script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=" crossorigin="anonymous"></script>--!>
-<script src="http://code.jquery.com/jquery-3.1.0.js" integrity="sha256-slogkvB1K3VOkzAI8QITxV3VzpOnkeNVsKvtkYLMjfk="   crossorigin="anonymous"></script>
+<script src="http://code.jquery.com/jquery-3.1.0.js"  crossorigin="anonymous"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-<script src="https://apis.google.com/js/platform.js" async defer></script>
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular-route.js"></script>
+<script src="https://apis.google.com/js/platform.js?onload=renderButton" async defer></script>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"></link>
+        <link href="https://fonts.googleapis.com/css?family=Noto+Sans|Lato|Open+Sans|Droid+Serif|Lato" rel="stylesheet"></link>
 <meta name="viewport" content="width=device-width, initial-scale=1"></meta>
 <meta name="google-signin-client_id" content="539757594504-gk5pemcpa45ts0p1i1uuctpc25j5qkt0.apps.googleusercontent.com"></meta>
-<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"></link>
-<link href="https://fonts.googleapis.com/css?family=Noto+Sans|Lato|Open+Sans|Droid+Serif|Lato" rel="stylesheet"></link>
-<link href="/stylesheet.css" rel="stylesheet"></link>
-<script src="route.js"></script>
+
+<link href="css/stylesheet.css" rel="stylesheet"></link>
+<script src="js/route.js"></script>
 <title>How's The G?</title>
 <base href="/">
 </head>
@@ -31,21 +31,30 @@
                 </div>
                 <div id="navbar" class="navbar-collapse collapse" aria-expanded="false" style="height: 1px;">
                     <ul class="nav navbar-nav navbar-right">
-                        <li class="active"><a href="/">Home</a></li>
-                        <li><a ng-href="/about">About</a></li>
+                        <li id="homeLink" class="active"><a ng-href="/" href="/">Home</a></li>
+                        <li id="aboutLink"><a ng-href="/about">About</a></li>
                     </ul>
                 </div><!--/.nav-collapse -->
             </div><!--/.container-fluid -->
         </nav>
         <div id="main">
-            <div ng-view>
+            <div ng-view></div>
+        </div>
+                <div id="g-signin-2"></div> to vote or comment.
+    </div>
+</div>
+<div id="signinModal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Sign In</h4>
+            </div>
+            <div class="modal-body">
+                <p>Sign in with Google to vote or comment.</p>
             </div>
         </div>
     </div>
-    <footer class="footer">
-        <div class="container">
-            <div id="gsignin">Sign in with Google to vote or comment: 
-                <div class="g-signin2" data-onsuccess="onSignIn"></div></div>
-        </div>
-    </footer>
+</div>
 </html>

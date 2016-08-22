@@ -2,27 +2,25 @@ var http = require('http'),
 express = require('express'),
 app = express(),
 bodyParser = require("body-parser"),
-mysql = require('mysql'),
-jws = require('jsrsasign');
+mysql = require('mysql');
 const fs = require('fs');
-
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
-app.use(express.static(__dirname + '/res/'));
-app.set('view engine', 'pug');
 require('express-ws')(app);
 //Config file
 var config = require('./config');
 //Load the emojis
 var emojis = require('./emojis');
 
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+app.use(express.static(__dirname + '/res/'));
+
 //Create connection details
 var connection = mysql.createConnection({
-    host : config.db.host,
-    user : config.db.user,
-    password : config.db.password,
-    database : config.db.database,
-    charset : 'utf8mb4'
+        host : config.db.host,
+        user : config.db.user,
+        password : config.db.password,
+        database : config.db.database,
+        charset : 'utf8mb4'
 });
 connection.connect(function(err) {
     if(err){
