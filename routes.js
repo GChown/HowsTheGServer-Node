@@ -1,19 +1,11 @@
-var jwt = require('jsonwebtoken');
+var jwt = require('jsonwebtoken'),
+config = require('./config'),
+emojis = require('./emojis'),
+https = require('https');
 const fs = require('fs');
-var config = require('./config');
-var cookieParser = require('cookie-parser');
-var emojis = require('./emojis');
-var https = require('https');
 
 module.exports = function(app, connection){
-    app.use(cookieParser());
-    app.get('/', function(req, res) {
-        res.render('index.pug', {
-                externalIp: "localhost",
-                clientID: config.google.clientID,
-        });
-    });
-    //Array of connected sockets
+    //Array of connected sockets - notify when update happens
     var socketList = [];
     // Votes websocket endpoint
     app.ws('/votes', function (ws) {
@@ -31,7 +23,7 @@ module.exports = function(app, connection){
     app.get('/emoji/:num', function(req, res){
         res.send(JSON.stringify({emojis: emojis.random(req.params.num) } ));  
     });
-
+    //Insert comment
     app.post('/comment', function(req, res){
         //Return will be either fail or success
         var fail = JSON.stringify("Fail"),
@@ -47,21 +39,26 @@ module.exports = function(app, connection){
                 connection.query(insert, [req.body.text, insertTime, isValid.sub], function(err, rows, fields) {
                     if(err) console.log(err);
                     if(rows.affectedRows == 1){
-                        //Send comments to each websocket
-                        //TODO: make this better
-                        returning = {
-                            text: req.body.text,
-                            timesent: insertTime,
-                            usrname: isValid.sub
-                        };
-                        var sending = { type: 'comment' , comments : returning };
-                        socketList.forEach(function(ws){
-                            //Check if socket is connected - if not remove it
-                            if(ws.readyState == 1){
-                                ws.send(JSON.stringify(sending));
-                            }else{
-                                socketList.splice(socketList.indexOf(ws), 1);
-                            }
+                        //Get commenter's username
+                        var userQuery = "SELECT username FROM user WHERE googleid = ?";
+                        connection.query(userQuery, isValid.sub, function(err, rows, fields){
+                            if(err) console.log(err);
+                            var username = rows[0].username;
+                            //Send comments to each websocket
+                            returning = {
+                                text: req.body.text,
+                                timesent: insertTime,
+                                username: username
+                            };
+                            var sending = { type: 'comment' , comments : returning };
+                            socketList.forEach(function(ws){
+                                //Check if socket is connected - if not remove it
+                                if(ws.readyState == 1){
+                                    ws.send(JSON.stringify(sending));
+                                }else{
+                                    socketList.splice(socketList.indexOf(ws), 1);
+                                }
+                            });
                         });
                     }else{
                         res.send(fail);
@@ -72,13 +69,14 @@ module.exports = function(app, connection){
         }
     });
 
-    //Returns comments since :date, a UNIX timestamp
-    app.get('/comment/:date', function(req, res){
-        getComments(req.params.date, function(response){
+    //Returns comments since :time, a UNIX timestamp
+    app.get('/comment/:time', function(req, res){
+        getComments(req.params.time, function(response){
             res.send(JSON.stringify(response));
         });
     });
 
+    //Insert a rating
     app.post('/rate', function(req, res) {
         //Check the vote is in valid range
         if(req.body.vote > 5 || req.body.vote < 0){
@@ -87,7 +85,7 @@ module.exports = function(app, connection){
         }else if(typeof req.body.token !== 'undefined' || typeof req.body.vote !== 'undefined'){
             verifyToken(req.body.token, function(isValid){
                 if(isValid){
-                    //Query inserts vote to table
+                    //Insert vote to table
                     var insert = "INSERT INTO vote(googleid, vote_l, date)" + 
                         " VALUES(?, ?, DATE(NOW())) ON DUPLICATE KEY UPDATE vote_l = ?";
                     connection.query(insert, 
@@ -118,7 +116,7 @@ module.exports = function(app, connection){
             res.send('error : no token sent');
         }
     });
-
+    //Verifies token for Google OAuth
     app.post('/verifyToken/', function(req, res){
         verifyToken(req.body.token, function(idToken){
             if(idToken){
@@ -133,12 +131,18 @@ module.exports = function(app, connection){
     //Verifies the token_id from Google. 
     //Calls callback with the decoded data if the token is valid,
     //callback with no parameter if the token is not valid.
+    //TODO: return HTTP unauthorized error code if token not valid
     function verifyToken(token, callback){
         //Check that there are 3 tokens
+        if(typeof token === 'undefined'){
+            callback();
+            return;
+        }
         var segments = token.split('.');
         if (segments.length !== 3) {
             throw new Error('Not enough or too many segments in token_id');
             callback();
+            return;
         }
         var header = JSON.parse(base64urlDecode(segments[0]));
 
@@ -223,7 +227,7 @@ module.exports = function(app, connection){
 
     function getComments(time, callback){
         //Note that mysql unix_timestamp is seconds, so multiply by 1000 to get miliseconds, comparable with javascript version
-        var commentQuery = "SELECT text, timesent, comment.usrname FROM comment JOIN user ON comment.googleid = user.googleid WHERE UNIX_TIMESTAMP(timesent) * 1000 > ?";
+        var commentQuery = "SELECT text, timesent, user.username FROM comment JOIN user ON comment.googleid = user.googleid WHERE UNIX_TIMESTAMP(timesent) * 1000 > ?";
         connection.query(commentQuery, time, function(err, rows, fields) {
             if(err){
                 console.log(err);
@@ -236,7 +240,7 @@ module.exports = function(app, connection){
                     returning.push({
                             text: data.text,
                             timesent: data.timesent,
-                            usrname: data.usrname
+                            username: data.username
                     });
                     rowsInserted++;
                     if(rowsInserted === array.length){
