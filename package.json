@@ -12,7 +12,8 @@
     "passport": "^0.3.2",
     "passport-google-oauth": "^1.0.0",
     "pug": "^2.0.0-beta4",
-    "google-auth-library" : "^0.9.8"
+    "google-auth-library" : "^0.9.8",
+    "jsonwebtoken" : "^7.1.9"
   },
   "devDependencies": {},
   "scripts": {
