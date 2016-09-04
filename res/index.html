@@ -1,60 +1,50 @@
 <!DOCTYPE html>
 <html ng-app="HTGApp">
     <head>
-<script src="http://code.jquery.com/jquery-3.1.0.js"  crossorigin="anonymous"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.js"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular-route.js"></script>
-<script src="https://apis.google.com/js/platform.js?onload=renderButton" async defer></script>
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"></link>
+        <script src="http://code.jquery.com/jquery-3.1.0.js"  crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular-route.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular-animate.js"></script>
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"></link>
+        <script src="https://apis.google.com/js/platform.js?onload=renderButton" async defer></script>
         <link href="https://fonts.googleapis.com/css?family=Noto+Sans|Lato|Open+Sans|Droid+Serif|Lato" rel="stylesheet"></link>
-<meta name="viewport" content="width=device-width, initial-scale=1"></meta>
-<meta name="google-signin-client_id" content="539757594504-gk5pemcpa45ts0p1i1uuctpc25j5qkt0.apps.googleusercontent.com"></meta>
+        <meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+        <meta name="google-signin-client_id" content="539757594504-gk5pemcpa45ts0p1i1uuctpc25j5qkt0.apps.googleusercontent.com"></meta>
 
-<link href="css/stylesheet.css" rel="stylesheet"></link>
-<script src="js/route.js"></script>
-<title>How's The G?</title>
-<base href="/">
-</head>
-<body ng-controller="mainController">
-    <div class="container">
-        <nav class="navbar navbar-default">
-            <div class="container-fluid">
-                <div class="navbar-header">
-                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-                        <span class="sr-only"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
-                    <a class="navbar-brand" href="#">How's The G?</a>
+        <link href="css/stylesheet.css" rel="stylesheet"></link>
+        <script src="js/route.js"></script>
+        <title>How's The G?</title>
+        <base href="/">
+        </head>
+        <body ng-controller="mainController">
+            <div class="container">
+                <nav class="navbar navbar-default">
+                    <div class="container-fluid">
+                        <div class="navbar-header">
+                            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                                <span class="sr-only"></span>
+                                <span class="icon-bar"></span>
+                                <span class="icon-bar"></span>
+                                <span class="icon-bar"></span>
+                            </button>
+                            <a class="navbar-brand" href="javascript:void()">How's The G?</a>
+                        </div>
+                        <div id="navbar" class="navbar-collapse collapse" aria-expanded="false" style="height: 1px;">
+                            <ul class="nav navbar-nav navbar-right">
+                                <li id="homeLink" class="active" data-toggle="collapse" data-target="#navbar"><a ng-href="/" href="/">Home</a></li>
+                                <li id="aboutLink"><a ng-href="/about" data-toggle="collapse" data-target="#navbar">About</a></li>
+                            </ul>
+                        </div><!--/.nav-collapse -->
+                    </div><!--/.container-fluid -->
+                </nav>
+                <div id="main">
+                    <div ng-view></div>
+<div id="googleSignin">
+<p>Sign in with Google to rate or comment:</p>
+    <div class="g-signin2" data-onsuccess="onSignIn"></div>
+</div>
                 </div>
-                <div id="navbar" class="navbar-collapse collapse" aria-expanded="false" style="height: 1px;">
-                    <ul class="nav navbar-nav navbar-right">
-                        <li id="homeLink" class="active"><a ng-href="/" href="/">Home</a></li>
-                        <li id="aboutLink"><a ng-href="/about">About</a></li>
-                    </ul>
-                </div><!--/.nav-collapse -->
-            </div><!--/.container-fluid -->
-        </nav>
-        <div id="main">
-            <div ng-view></div>
-        </div>
-                <div id="g-signin-2"></div> to vote or comment.
-    </div>
-</div>
-<div id="signinModal" class="modal fade" role="dialog">
-    <div class="modal-dialog">
-        <!-- Modal content-->
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title">Sign In</h4>
-            </div>
-            <div class="modal-body">
-                <p>Sign in with Google to vote or comment.</p>
             </div>
         </div>
-    </div>
-</div>
-</html>
+    </html>

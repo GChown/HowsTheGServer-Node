@@ -1,6 +1,7 @@
 var jwt = require('jsonwebtoken'),
 config = require('./config'),
 emojis = require('./emojis'),
+crypto = require('crypto'),
 https = require('https');
 const fs = require('fs');
 
@@ -9,6 +10,7 @@ module.exports = function(app, connection){
     var socketList = [];
     // Votes websocket endpoint
     app.ws('/votes', function (ws) {
+        console.log('Pushing websocket');
         socketList.push(ws);
     });
 
@@ -36,44 +38,42 @@ module.exports = function(app, connection){
                     //Send 401 Unauthorized error
                     res.status(401).send('Login failed');
                 }else{
-                var insertTime = Date.now() / 1000;
-                var insert = "INSERT INTO comment(text, timesent, googleid) VALUES(?, FROM_UNIXTIME(?), ?);";
-                connection.query(insert, [req.body.text, insertTime, isValid.sub], function(err, rows, fields) {
-                    if(err){
-                        console.log('Error inserting comment: ' + err);
-                        res.status(500).send('Internal error inserting comment');
-                    }
-                    if(rows.affectedRows == 1){
-                        //Get commenter's username
-                        var userQuery = "SELECT username FROM user WHERE googleid = ?";
-                        connection.query(userQuery, isValid.sub, function(err, rows, fields){
-                            if(err){
-                                console.log('Error finding username: ' + err);
-                            }else{
-                            var username = rows[0].username;
-                            console.log(username);
-                            //Send comments to each websocket
-                            returning = {
-                                text: req.body.text,
-                                timesent: insertTime,
-                                username: username
-                            };
-                            var sending = {
-                                type: 'comment' ,
-                                comments : returning 
-                            };
-                            sendToSockets(sending);
-                            res.status(201).send('Success');
-                            }
-                        });
-                    }else{
-                        //There was no comment inserted
-                        console.log('No comment inserted:');
-                        console.dir(req.body.text);
-                        res.status(500).send('Internal error');
-                    }
-                });
-            }
+                    var insertTime = Date.now() / 1000;
+                    var insert = "INSERT INTO comment(text, timesent, googleid) VALUES(?, FROM_UNIXTIME(?), ?);";
+                    connection.query(insert, [req.body.text, insertTime, isValid.sub], function(err, rows, fields) {
+                        if(err){
+                            console.log('Error inserting comment: ' + err);
+                            res.status(500).send('Internal error inserting comment');
+                        }
+                        if(rows.affectedRows == 1){
+                            //Get commenter's username
+                            var userQuery = "SELECT username FROM user WHERE googleid = ?";
+                            connection.query(userQuery, isValid.sub, function(err, rows, fields){
+                                if(err){
+                                    console.log('Error finding username: ' + err);
+                                }else{
+                                    var username = rows[0].username;
+                                    //Send comments to each websocket
+                                    var sending = {
+                                        type: 'comment' ,
+                                        comments : {
+                                            text: req.body.text,
+                                            timesent: insertTime,
+                                            username: username
+                                        } 
+                                    };
+                                    sendToSockets(sending);
+                                    res.status(201).send('Success');
+                                }
+                            });
+                        }else{
+                            //There was no comment inserted
+                            console.log('No comment inserted:');
+                            console.dir(req.body.text);
+                            res.status(500).send('Internal error');
+                        }
+                    });
+                }
             });
         }
     });
@@ -107,12 +107,12 @@ module.exports = function(app, connection){
                             if(err){
                                 console.log('Error inserting vote: ');
                                 console.dir(err);
-                            }else if(rows.affectedRows == 1){
+                            }else if(rows.affectedRows != 0){
                                 //Notify all webSocket listening that there is a new vote
                                 getScores(function(score){
                                     var sending = {
-                                            type : 'vote',
-                                            score : score
+                                        type : 'vote',
+                                        score : score
                                     };
                                     sendToSockets(sending);
                                 });
@@ -128,23 +128,121 @@ module.exports = function(app, connection){
             res.status(400).send('No login token sent');
         }
     });
-    //Verifies token for Google OAuth
-    app.post('/verifyToken/', function(req, res){
+
+    //Generates 4 emojis and hash
+    app.get('/userGen', function(req, res){
+        hashMojis = emojis.genUsername();
+        res.status(200).send(hashMojis);
+    });
+ 
+    //Sets username from hash retrieved by userGen
+    app.post('/setUsername', function(req, res){
+        if(empty([req.body.hash, req.body.token])){
+            res.status(400).send('Bad request body');
+            return;
+        }
+        var secret = config.emoji.key;
+        var decipher = crypto.createDecipher('aes192', secret); 
+        try{
+            var decrypted = decipher.update(req.body.hash, 'hex', 'utf8') + decipher.final('utf8');
+        }catch(error){
+            res.status(400).send('Bad emoji hash (*maaaaaaaaaan*)');
+            return;
+        }
         verifyToken(req.body.token, function(idToken){
             if(idToken){
-                res.status(500).send('Verified');
+                var update = "UPDATE user SET username=? WHERE googleid=?;";
+                connection.query(update, [decrypted, req.body.googleid], function(err, rows, fields) {
+                    if(err){
+                        console.log('Error updating username!');
+                        console.dir(err);
+                    }
+                    if(rows.affectedRows == 1){
+                        res.status(200).send();
+                        return;
+                    }else{
+                        console.log('Error updating username:');
+                        console.dir(rows);
+                        res.status(500).send('Error updating username');
+                        return;
+                    }
+                });
             }else{
                 //Send error 401
                 res.status(401).send('Not verified');
             }
+        });
+    });
 
+    //Returns user's number of votes, number of comments
+    app.get('/user/:username', function(req, res){
+        if(empty(req.params.username)){
+            res.status(400).send('Bad request body');
+            return;
+        }
+        var returning = {};
+        var select = "SELECT COUNT(V_ID) votes FROM vote WHERE googleid = (SELECT googleid FROM user WHERE username=?)";
+        connection.query(select, req.params.username, function(err, rows, fields) {
+            if(err){
+                console.log('Error getting number of votes for user ' + req.params.username);
+                console.log(err);
+                res.status(500).send();
+            }else{
+                returning.votes = rows[0].votes;
+                var select = "SELECT COUNT(C_ID) comments FROM comment WHERE googleid = (SELECT googleid FROM user WHERE username=?)";
+                connection.query(select, req.params.username, function(err, rows, fields){
+                    if(err){
+                        console.log('Error getting count of comments for user ' + req.params.username);
+                        console.log(err);
+                        res.status(500).send();
+                    }else{
+                        returning.comments = rows[0].comments;
+                        res.send(returning);
+                    }
+                });
+            }
+        });
+    });
+
+    //Checks if user exists and creates if they don't
+    app.post('/checkUser/', function(req, res){
+        verifyToken(req.body.token, function(idToken){
+            if(idToken){
+                var emojiName = emojis.random(4);
+                var username = '';
+                emojiName.forEach(function(character){
+                    username += character;
+                });
+                var get = "SELECT username FROM user WHERE googleid = ?";
+                connection.query(get, [idToken.sub], function(err, rows, fields){
+                    if(err){
+                        console.log('Error getting user: ' + idToken.sub + err);
+                        res.status(500).send('Error getting user');
+                    }else if(rows.length == 1){
+                                res.status(200).send('Exists');
+                    }else{
+                        var insert = "INSERT INTO user(googleid, username)" + 
+                            " VALUES(?, ?) ON DUPLICATE KEY UPDATE googleid = googleid";
+                        connection.query(insert, [idToken.sub, username], function(err, rows, fields){
+                            if(err){
+                                console.log('Error creating user:' + idToken.sub + err);
+                                res.status(500).send('Error creating user');
+                            }else if(rows.affectedRows == 1){
+                                res.status(201).send('Created');
+                            }
+                        });
+                    }
+                });
+            }else{
+                //Send error 401
+                res.status(401).send('Not verified');
+            }
         });
     });
 
     //Verifies the token_id from Google. 
     //Calls callback with the decoded data if the token is valid,
     //callback with no parameter if the token is not valid.
-    //TODO: return HTTP unauthorized error code if token not valid
     function verifyToken(token, callback){
         if(typeof token === 'undefined'){
             callback();
@@ -187,7 +285,7 @@ module.exports = function(app, connection){
                                 }
                             }
                     });
-                } else{
+                }else{
                     downloadCerts(function(){
                         verifyToken(token, callback);  
                     });
@@ -207,7 +305,7 @@ module.exports = function(app, connection){
             }).on('error', function(err) { 
             // Something went wrong
             fs.unlink(dest); // Delete the file
-            if (callback) callback(err.message);
+            if (callback) callback();
             });
         }
     }
@@ -222,18 +320,18 @@ module.exports = function(app, connection){
     }
 
     function getScores(callback){
-        var returning = [];
+        var returning = {};
         //Query to find average
         var avgQuery = "SELECT AVG(vote_l) avg FROM vote WHERE date = DATE(NOW())";
         connection.query(avgQuery, function getAvg(err, rows, fields) {
             if (err) console.dir(err);
-            returning.push({"avg":rows[0].avg});
+            returning.avg = rows[0].avg;
         });
         //Now for the count 
         countQuery = "SELECT COUNT(vote_l) count FROM vote WHERE date = DATE(NOW());";
         connection.query(countQuery, function getCount(err, rows, fields) {
             if (err) console.dir(err);
-            returning.push({"count":rows[0].count});
+            returning.count = rows[0].count;
             callback(returning);
         });
     }
@@ -267,11 +365,32 @@ module.exports = function(app, connection){
     //Send data to all websockets. If socket isn't connected, remove it from list.
     function sendToSockets(data){
         socketList.forEach(function(ws){
-            if(ws.readyState == 1){
-                ws.send(JSON.stringify(data));
-            }else{
+           try{
+               ws.send(JSON.stringify(data));
+           }catch(err){
+            console.log('Deleteing websocket');
                 socketList.splice(socketList.indexOf(ws), 1);
-            }
+           }
         });
+    }
+    //Checks if variable is set and not empty. Similar to PHP's
+    function empty(variable){
+        var isEmpty = false;
+        switch(typeof variable){
+        case 'object':
+            variable.forEach(function(value){
+                if(typeof value == 'undefined' || variable == ''){
+                    isEmpty = true;
+                }
+            });
+            return isEmpty;
+            break;
+        case 'string':
+            return variable === '';
+            break;
+        case 'undefined':
+            return true;
+            break;
+        }
     }
 };

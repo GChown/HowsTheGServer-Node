@@ -1,10 +1,20 @@
-<p style="text-align:center">How's The G? lets you rate, comment, and see what other people think about the cafeteria's food.</p>
+<div class="center">
+<p>How's The G? lets you rate, comment, and see what other people think about the cafeteria's food.</p>
+</div>
+<div id="googleSignin">
+    <div class="g-signin2" data-onsuccess="onSignIn"></div>
+</div>
 <div class="row">
     <div class="col-md-7 center" ng-controller="voteController">
         <h3>Vote</h3>
         <div id="count"></div>
-        <input type="text" id="rating"></input>
-    <button id="sendVote">Send vote</button>
+        <span style="font-size:24pt">
+        <a href="javascript:void(0)" ng-click="sendVote(1)">⭐</a>
+        <a href="javascript:void(0)" ng-click="sendVote(2)">⭐</a>
+        <a href="javascript:void(0)" ng-click="sendVote(3)">⭐</a>
+        <a href="javascript:void(0)" ng-click="sendVote(4)">⭐</a>
+        <a href="javascript:void(0)" ng-click="sendVote(5)">⭐</a>
+    </span>
 </div>
 <div ng-controller="commentsController" class="col-md-5">
     <div class="center">
@@ -13,7 +23,21 @@
     <button id="sendComment" ng-click="sendComment()">Send comment</button>
 </div>
 <p class="comment" ng-repeat="comment in comments | reverse"> 
-    {{ comment.username }} -  {{ comment.text }} ({{ comment.timesent }})
+    <a  data-toggle="modal" data-target="#userModal" ng-click="showUser(comment.username)" href="javascript:void()">{{ comment.username }}</a> -  {{ comment.text }} (<span title="{{comment.timesent}}">{{ comment.timesent | beautifyTime }}</span>)
 </p>
+<div class="modal fade" id="userModal" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">User - {{ profile.username }}</h4>
+            </div>
+            <div class="modal-body">
+                <p>Number of ratings: {{ profile.numRatings }} </p>
+                <p>Number of comments : {{ profile.numComments }} </p>
+            </div>
+        </div>
+    </div>
+</div>
 </div>
 </div>

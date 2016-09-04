@@ -1,22 +1,13 @@
 //Google user's ID token
 var id_token;
-
-//Render sign in button
-function renderButton() {
-    gapi.signin2.render('g-signin-2', {
-            'width': 240,
-            'height': 50,
-            'longtitle': true,
-            'onsuccess': onSignIn,
-    });
-}
-
 //Signs in Google user
 function onSignIn(googleUser) {
     //id_token is sent with every POST request
     id_token = googleUser.getAuthResponse().id_token;
     //Hide the sign in modal
-    $('#signinModal').modal('hide');
+    $('#googleSignin').hide('fast');
+    //Check if user exists and create if they don't
+    $.post("/checkUser", { token: id_token });
 }
 
 var HTGApp = angular.module('HTGApp', ['ngRoute'])
@@ -32,54 +23,53 @@ var HTGApp = angular.module('HTGApp', ['ngRoute'])
 }).controller('aboutController', function($scope) {
 }).controller('voteController', function($scope, $http, webSocket){
 //Vote update listener
-$('#sendVote').on('click', function(){
+$scope.sendVote = function(numStars){
     $.ajax({
             type: 'POST',
             url: '/rate',
             data: {
-                vote : $('#rating').val(),
+                vote : numStars,
                 token : id_token 
             }
     });
-});
-//Initial get vote
-$http.get("/votes").then(function(data) {
-    var rating = data.data;
-    var avg = rating[0].avg;
-    var count = rating[1].count;
-    //If nobody has voted yet it'll be null
-    if(avg == null && count == 0){
-        $('#count').html('Nobody has voted on lunch yet!');
-    }else{
-        if(count == 1){
-            $('#count').html(count + ' person has given lunch ' 
-                + avg + ' stars');
-        }else{
-            $('#count').html(count + ' people have given lunch ' 
-                + avg + ' stars');
-        }
-    }
-});
-$scope.voteListener = function(data){
-    var rating = data.score;
-    var avg = rating[0].avg;
-    var count = rating[1].count;
-    //If nobody has voted yet it'll be null
-    if(avg == null && count == 0){
-        $('#count').html('Nobody has voted on lunch yet!');
-    }else{
-        if(count == 1){
-            $('#count').html(count + ' person has given lunch ' 
-                + avg + ' stars');
-        }else{
-            $('#count').html(count + ' people have given lunch ' 
-                + avg + ' stars');
-        }
-    }
     };
-    webSocket.voteListeners.push($scope.voteListener);
+    //Initial get vote
+    $http.get("/votes").then(function(data) {
+        var rating = data.data;
+        var avg = rating.avg;
+        var count = rating.count;
+        //If nobody has voted yet it'll be null
+        if(avg == null && count == 0){
+            $('#count').html('Nobody has voted on lunch yet!');
+        }else{
+            if(count == 1){
+                $('#count').html(count + ' person has given lunch ' + avg + ' / 5');
+            }else{
+                $('#count').html(count + ' people have given lunch ' + avg + ' / 5');
+            }
+        }
+    });
+    $scope.voteListener = function(data){
+        var rating = data;
+        var avg = rating.avg;
+        var count = rating.count;
+        //If nobody has voted yet it'll be null
+        if(avg == null && count == 0){
+            $('#count').html('Nobody has voted on lunch yet!');
+        }else{
+            if(count == 1){
+                $('#count').html(count + ' person has given lunch ' + avg + ' / 5');
+            }else{
+                $('#count').html(count + ' people have given lunch ' + avg + ' / 5');
+            }
+            }
+            };
+            webSocket.voteListeners.push($scope.voteListener);
 }).controller('commentsController', function($scope, $http, webSocket) {
+//Array of comments
 $scope.comments = [];
+//User's profile viewing in modal
+$scope.profile = {};
 //Retrieve comments
 //On initial request, get all comments from today.
 //Every 10 seconds after, get comments since most recent check.
@@ -102,7 +92,6 @@ $scope.sendComment = function(){
         token: id_token
     };
     $http.post("/comment", sendingData, function(returned){
-        console.dir(returned); 
     });
     $('#userComment').val('');
 }
@@ -117,6 +106,15 @@ $scope.commentListener = function(data){
     //Must do this to update the ng-repeat comment div
     $scope.$apply();
 }
+$scope.showUser = function(username){
+    $scope.profile.username = username;
+    $http.get("/user/" + username).then(function(data) {
+        //Dada?
+        data = data.data;
+        $scope.profile.numRatings = data.votes;
+        $scope.profile.numComments = data.comments;
+    });
+}
 webSocket.commentListeners.push($scope.commentListener);
 })
 //Use this filter to reverse order of comments - newest at top
@@ -124,6 +122,37 @@ webSocket.commentListeners.push($scope.commentListener);
     return function(items) {
         return items.slice().reverse();
     };
+})
+.filter('beautifyTime', function($interval) {
+    return function(dateString) {
+        var returning,
+        timeStamp = new Date(Date.parse(dateString)),
+        now = new Date(),
+        secondsPast = (now.getTime() - timeStamp.getTime()) / 1000;
+        if(secondsPast < 60){
+            return parseInt(secondsPast) + 's';
+        }
+        if(secondsPast < 3600){
+            return parseInt(secondsPast/60) + 'm';
+        }
+        if(secondsPast <= 86400){
+            return parseInt(secondsPast/3600) + 'h';
+        }
+        if(secondsPast > 86400){
+            day = timeStamp.getDate();
+            month = timeStamp.toDateString().match(/ [a-zA-Z]*/)[0].replace(" ","");
+            year = timeStamp.getFullYear() == now.getFullYear() ? "" :  " "+timeStamp.getFullYear();
+            return day + " " + month + year;
+        }
+    }
+})
+.filter('refreshAuto', function($filter) {
+    return function(items){
+        //Update time every second
+        return setTimeout(function(){
+            $filter('beautifyTime')(items);
+        }, 1000);
+    }
 })
 .config(function($routeProvider, $locationProvider) {
     $routeProvider
@@ -148,7 +177,7 @@ webSocket.commentListeners.push($scope.commentListener);
     var commentListeners = [];
 
     var webSocketHost = location.protocol === 'https:' ? 'wss://' : 'ws://';
-    var externalIp = '192.168.1.127';
+    var externalIp = 'localhost';
     var webSocketUri =  webSocketHost + externalIp + ':65080/votes';
     // Establish the WebSocket connection and register event handlers.
     var websocket = new WebSocket(webSocketUri);
@@ -167,7 +196,7 @@ webSocket.commentListeners.push($scope.commentListener);
         switch(data['type']){
         case 'vote':
             voteListeners.forEach(function(listener){
-                listener(data.vote);
+                listener(data.score);
             });
             break;
         case 'comment':
