@@ -1,13 +1,22 @@
 //Google user's ID token
 var id_token;
+var address = location.origin;
+
+function renderButton(){
+    gapi.signin2.render('googleSignin', {
+        'theme': 'dark',
+        'onsuccess': onSignIn,
+    });
+}
 //Signs in Google user
 function onSignIn(googleUser) {
     //id_token is sent with every POST request
     id_token = googleUser.getAuthResponse().id_token;
+    console.log('Signed in with Google ');
+    $("#descFooter").fadeIn(100).fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100);
     //Hide the sign in modal
-    $('#googleSignin').hide('fast');
     //Check if user exists and create if they don't
-    $.post("/checkUser", { token: id_token });
+    $.post(address + "/checkUser", { token: id_token });
 }
 
 var HTGApp = angular.module('HTGApp', ['ngRoute'])
@@ -24,17 +33,12 @@ var HTGApp = angular.module('HTGApp', ['ngRoute'])
 }).controller('voteController', function($scope, $http, webSocket){
 //Vote update listener
 $scope.sendVote = function(numStars){
-    $.ajax({
-            type: 'POST',
-            url: '/rate',
-            data: {
-                vote : numStars,
-                token : id_token 
-            }
+    $.post(address + '/rate', {vote : numStars, token: id_token}).fail(function() {
+        $("#descFooter").fadeIn(100).fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100);
     });
     };
     //Initial get vote
-    $http.get("/votes").then(function(data) {
+    $http.get(address + "/votes").then(function(data) {
         var rating = data.data;
         var avg = rating.avg;
         var count = rating.count;
@@ -75,7 +79,7 @@ $scope.profile = {};
 //Every 10 seconds after, get comments since most recent check.
 var midnight = new Date();
 midnight.setHours(0,0,0,0);
-$http.get("/comment/" + midnight.getTime())
+$http.get(address + "/comment/" + midnight.getTime())
 .then(function(comments) {
     comments.data.forEach(function(dataRetrieved){
         $scope.comments.push({
@@ -91,7 +95,8 @@ $scope.sendComment = function(){
         text : userComment,
         token: id_token
     };
-    $http.post("/comment", sendingData, function(returned){
+    $.post(address + "/comment", sendingData).fail(function() {
+        $("#descFooter").fadeIn(100).fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100);
     });
     $('#userComment').val('');
 }
@@ -108,7 +113,7 @@ $scope.commentListener = function(data){
 }
 $scope.showUser = function(username){
     $scope.profile.username = username;
-    $http.get("/user/" + username).then(function(data) {
+    $http.get(address + "/user/" + username).then(function(data) {
         //Dada?
         data = data.data;
         $scope.profile.numRatings = data.votes;
@@ -177,7 +182,7 @@ webSocket.commentListeners.push($scope.commentListener);
     var commentListeners = [];
 
     var webSocketHost = location.protocol === 'https:' ? 'wss://' : 'ws://';
-    var externalIp = 'localhost';
+    var externalIp = location.hostname;
     var webSocketUri =  webSocketHost + externalIp + ':65080/votes';
     // Establish the WebSocket connection and register event handlers.
     var websocket = new WebSocket(webSocketUri);

@@ -10,7 +10,6 @@ module.exports = function(app, connection){
     var socketList = [];
     // Votes websocket endpoint
     app.ws('/votes', function (ws) {
-        console.log('Pushing websocket');
         socketList.push(ws);
     });
 
@@ -23,12 +22,12 @@ module.exports = function(app, connection){
 
     //Retrieve number of random emojis for username set/change
     app.get('/emoji/:num', function(req, res){
-        res.send(JSON.stringify({emojis: emojis.random(req.params.num) } ));  
+        res.send(JSON.stringify({emojis: emojis.random(req.params.num) } ));
     });
     //Insert comment
     app.post('/comment', function(req, res){
         //Check to see if they put in the required params first
-        if(typeof req.body.token == 'undefined' || typeof req.body.text == 'undefined'){
+        if(typeof req.body.token == 'undefined' || typeof req.body.text == 'undefined' || req.body.text == '' || req.body.text.length > 140){
             //Send Bad Request error (malformed syntax request)
             res.status(400).send('Malformed Request');
         }else{
@@ -60,7 +59,7 @@ module.exports = function(app, connection){
                                             text: req.body.text,
                                             timesent: insertTime,
                                             username: username
-                                        } 
+                                        }
                                     };
                                     sendToSockets(sending);
                                     res.status(201).send('Success');
@@ -134,7 +133,7 @@ module.exports = function(app, connection){
         hashMojis = emojis.genUsername();
         res.status(200).send(hashMojis);
     });
- 
+
     //Sets username from hash retrieved by userGen
     app.post('/setUsername', function(req, res){
         if(empty([req.body.hash, req.body.token])){
@@ -142,7 +141,7 @@ module.exports = function(app, connection){
             return;
         }
         var secret = config.emoji.key;
-        var decipher = crypto.createDecipher('aes192', secret); 
+        var decipher = crypto.createDecipher('aes192', secret);
         try{
             var decrypted = decipher.update(req.body.hash, 'hex', 'utf8') + decipher.final('utf8');
         }catch(error){
@@ -221,7 +220,7 @@ module.exports = function(app, connection){
                     }else if(rows.length == 1){
                                 res.status(200).send('Exists');
                     }else{
-                        var insert = "INSERT INTO user(googleid, username)" + 
+                        var insert = "INSERT INTO user(googleid, username)" +
                             " VALUES(?, ?) ON DUPLICATE KEY UPDATE googleid = googleid";
                         connection.query(insert, [idToken.sub, username], function(err, rows, fields){
                             if(err){
@@ -240,7 +239,7 @@ module.exports = function(app, connection){
         });
     });
 
-    //Verifies the token_id from Google. 
+    //Verifies the token_id from Google.
     //Calls callback with the decoded data if the token is valid,
     //callback with no parameter if the token is not valid.
     function verifyToken(token, callback){
@@ -266,7 +265,7 @@ module.exports = function(app, connection){
                 });
             }else{
                 data = JSON.parse(data);
-                //The header's key ID will be in the pem file. 
+                //The header's key ID will be in the pem file.
                 //If not, we need to get a new copy of the public certs.
                 if(typeof data[header.kid] != 'undefined'){
                     //check signature and return;
@@ -281,13 +280,14 @@ module.exports = function(app, connection){
                                 if(decoded.aud == config.google.clientID){
                                     callback(decoded);
                                 }else{
+                                    //Doesn't match with the Google client ID set in config
                                     callback();
                                 }
                             }
                     });
                 }else{
                     downloadCerts(function(){
-                        verifyToken(token, callback);  
+                        verifyToken(token, callback);
                     });
                 }
             }
@@ -368,7 +368,6 @@ module.exports = function(app, connection){
            try{
                ws.send(JSON.stringify(data));
            }catch(err){
-            console.log('Deleteing websocket');
                 socketList.splice(socketList.indexOf(ws), 1);
            }
         });

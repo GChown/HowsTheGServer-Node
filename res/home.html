@@ -1,11 +1,6 @@
-<div class="center">
 <p>How's The G? lets you rate, comment, and see what other people think about the cafeteria's food.</p>
-</div>
-<div id="googleSignin">
-    <div class="g-signin2" data-onsuccess="onSignIn"></div>
-</div>
-<div class="row">
-    <div class="col-md-7 center" ng-controller="voteController">
+<div class="row center">
+    <div class="col-md-7" ng-controller="voteController">
         <h3>Vote</h3>
         <div id="count"></div>
         <span style="font-size:24pt">
@@ -19,10 +14,12 @@
 <div ng-controller="commentsController" class="col-md-5">
     <div class="center">
         <h3>Comments</h3>
+        <form>
         <input type="text" id="userComment"></input>
-    <button id="sendComment" ng-click="sendComment()">Send comment</button>
+    <input type="submit" value="Send comment" id="sendComment" ng-click="sendComment()"/>
+</form>
 </div>
-<p class="comment" ng-repeat="comment in comments | reverse"> 
+<p class="comment" ng-repeat="comment in comments | reverse">
     <a  data-toggle="modal" data-target="#userModal" ng-click="showUser(comment.username)" href="javascript:void()">{{ comment.username }}</a> -  {{ comment.text }} (<span title="{{comment.timesent}}">{{ comment.timesent | beautifyTime }}</span>)
 </p>
 <div class="modal fade" id="userModal" role="dialog">

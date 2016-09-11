@@ -37,6 +37,6 @@ var wsServer = app.listen('65080', function () {
 });
 
 // Listen for non-websocket connections on port 8080. 
-var server = http.createServer(app).listen(process.env.PORT || '8080', function () {
+var server = http.createServer(app).listen(process.env.PORT || '80', function () {
     console.log("Web server listening");
 });
