@@ -338,7 +338,7 @@ module.exports = function(app, connection){
 
     function getComments(time, callback){
         //Note that mysql unix_timestamp is seconds, so multiply by 1000 to get miliseconds, comparable with javascript version
-        var commentQuery = "SELECT text, timesent, user.username FROM comment JOIN user ON comment.googleid = user.googleid WHERE UNIX_TIMESTAMP(timesent) * 1000 > ?";
+        var commentQuery = "SELECT text, timesent, user.username FROM comment JOIN user ON comment.googleid = user.googleid WHERE UNIX_TIMESTAMP(timesent) * 1000 > ? ORDER BY timesent";
         connection.query(commentQuery, time, function(err, rows, fields) {
             if(err){
                 console.log(err);

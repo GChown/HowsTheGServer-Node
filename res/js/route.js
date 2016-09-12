@@ -12,8 +12,7 @@ function renderButton(){
 function onSignIn(googleUser) {
     //id_token is sent with every POST request
     id_token = googleUser.getAuthResponse().id_token;
-    console.log('Signed in with Google ');
-    $("#descFooter").fadeIn(100).fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100);
+    $('#loginModal').modal('hide');
     //Hide the sign in modal
     //Check if user exists and create if they don't
     $.post(address + "/checkUser", { token: id_token });
@@ -34,7 +33,11 @@ var HTGApp = angular.module('HTGApp', ['ngRoute'])
 //Vote update listener
 $scope.sendVote = function(numStars){
     $.post(address + '/rate', {vote : numStars, token: id_token}).fail(function() {
-        $("#descFooter").fadeIn(100).fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100);
+        gapi.signin2.render('googleSignin', {
+            'theme': 'dark',
+            'onsuccess': onSignIn,
+        });
+        $('#loginModal').modal('show');
     });
     };
     //Initial get vote
@@ -96,7 +99,11 @@ $scope.sendComment = function(){
         token: id_token
     };
     $.post(address + "/comment", sendingData).fail(function() {
-        $("#descFooter").fadeIn(100).fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100);
+        gapi.signin2.render('googleSignin', {
+            'theme': 'dark',
+            'onsuccess': onSignIn,
+        });
+        $('#loginModal').modal('show');
     });
     $('#userComment').val('');
 }
