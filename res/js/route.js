@@ -60,6 +60,7 @@ $scope.sendVote = function(numStars){
         var rating = data;
         var avg = rating.avg;
         var count = rating.count;
+        $scope.saying = setSaying(Math.round(avg));
         //If nobody has voted yet it'll be null
         if(avg == null && count == 0){
             $('#count').html('Nobody has voted on lunch yet!');
