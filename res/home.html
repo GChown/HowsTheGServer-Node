@@ -1,15 +1,16 @@
 <h1>How's The G?</h1>
 <p>How's The G? lets you rate, comment, and see what other people think about the cafeteria's food.</p>
+<div id="homeSignIn"></div>
 <div class="row center">
     <div class="col-md-7" ng-controller="voteController">
         <h3>Vote</h3>
         <div id="count"></div>
         <span style="font-size:24pt">
-        <a href="javascript:void(0)" ng-click="sendVote(1)">⭐</a>
-        <a href="javascript:void(0)" ng-click="sendVote(2)">⭐</a>
-        <a href="javascript:void(0)" ng-click="sendVote(3)">⭐</a>
-        <a href="javascript:void(0)" ng-click="sendVote(4)">⭐</a>
-        <a href="javascript:void(0)" ng-click="sendVote(5)">⭐</a>
+        <a href="javascript:void(0)" id="vote_1" ng-click="sendVote(1)">⭐</a>
+        <a href="javascript:void(0)" id="vote_2" ng-click="sendVote(2)">⭐</a>
+        <a href="javascript:void(0)" id="vote_3" ng-click="sendVote(3)">⭐</a>
+        <a href="javascript:void(0)" id="vote_4" ng-click="sendVote(4)">⭐</a>
+        <a href="javascript:void(0)" id="vote_5" ng-click="sendVote(5)">⭐</a>
     </span>
 </div>
 <div ng-controller="commentsController" class="col-md-5">
@@ -21,7 +22,7 @@
 </form>
 </div>
 <p class="comment" ng-repeat="comment in comments | reverse">
-    <a data-toggle="modal" data-target="#userModal" ng-click="showUser(comment.username)" href="javascript:void()">{{ comment.username }}</a> -  {{ comment.text }} (<span title="{{comment.timesent}}">{{ comment.timesent | beautifyTime }}</span>)
+    <a data-toggle="modal" data-target="#userModal" ng-click="showUser(comment.username)" href="javascript:void(0)">{{ comment.username }}</a> -  {{ comment.text }} (<span title="{{comment.timesent}}">{{ comment.timesent | beautifyTime }}</span>)
 </p>
 <div class="modal fade" id="userModal" role="dialog">
     <div class="modal-dialog">
