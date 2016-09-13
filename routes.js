@@ -98,10 +98,10 @@ module.exports = function(app, connection){
                     res.status(401).send('Login failed');
                 }else{
                     //Insert vote to table
-                    var insert = "INSERT INTO vote(googleid, vote_l, date)" + 
-                        " VALUES(?, ?, DATE(NOW())) ON DUPLICATE KEY UPDATE vote_l = ?";
-                    connection.query(insert, 
-                        [isValid.sub, req.body.vote, req.body.vote], 
+                    var insert = "INSERT INTO vote(googleid, vote_" + getMeal() + ", date)" +
+                " VALUES(?, ?, DATE(NOW())) ON DUPLICATE KEY UPDATE vote_" + getMeal() + " = ?";
+                    connection.query(insert,
+                        [isValid.sub, req.body.vote, req.body.vote],
                         function(err, rows, fields) {
                             if(err){
                                 console.log('Error inserting vote: ');
@@ -322,13 +322,13 @@ module.exports = function(app, connection){
     function getScores(callback){
         var returning = {};
         //Query to find average
-        var avgQuery = "SELECT AVG(vote_l) avg FROM vote WHERE date = DATE(NOW())";
+        var avgQuery = "SELECT AVG(vote_" + getMeal() + ") avg FROM vote WHERE date = DATE(NOW())";
         connection.query(avgQuery, function getAvg(err, rows, fields) {
             if (err) console.dir(err);
             returning.avg = rows[0].avg;
         });
-        //Now for the count 
-        countQuery = "SELECT COUNT(vote_l) count FROM vote WHERE date = DATE(NOW());";
+        //Now for the count
+        countQuery = "SELECT COUNT(vote_" + getMeal() + ") count FROM vote WHERE date = DATE(NOW());";
         connection.query(countQuery, function getCount(err, rows, fields) {
             if (err) console.dir(err);
             returning.count = rows[0].count;
@@ -390,6 +390,17 @@ module.exports = function(app, connection){
         case 'undefined':
             return true;
             break;
+        }
+    }
+    function getMeal(){
+        var insertTime = new Date();
+        var hours = insertTime.getHours();
+        if(hours < 12){
+            return 'b';
+        }else if(hours >= 12 && hours < 16){
+            return 'l';
+        }else if(hours >= 16){
+            return 'd';
         }
     }
 };

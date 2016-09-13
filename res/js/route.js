@@ -61,12 +61,12 @@ $http.get(address + "/votes").then(function(data) {
     var count = rating.count;
     //If nobody has voted yet it'll be null
     if(avg == null && count == 0){
-        $('#count').html('Nobody has voted on lunch yet!');
+        $('#count').html('Nobody has voted on ' + getMeal() + ' yet!');
     }else{
         if(count == 1){
-            $('#count').html(count + ' person has given lunch ' + avg + ' / 5');
+            $('#count').html(count + ' person has given ' + getMeal() +  ' ' + avg + ' / 5');
         }else{
-            $('#count').html(count + ' people have given lunch ' + avg + ' / 5');
+            $('#count').html(count + ' people have given ' + getMeal() +  ' ' + avg + ' / 5');
         }
     }
 });
@@ -76,12 +76,12 @@ $scope.voteListener = function(data){
     var count = rating.count;
     //If nobody has voted yet it'll be null
     if(avg == null && count == 0){
-        $('#count').html('Nobody has voted on lunch yet!');
+        $('#count').html('Nobody has voted on ' + getMeal() + ' yet!');
     }else{
         if(count == 1){
-            $('#count').html(count + ' person has given lunch ' + avg + ' / 5');
+            $('#count').html(count + ' person has given ' + getMeal() +  ' ' + avg + ' / 5');
         }else{
-            $('#count').html(count + ' people have given lunch ' + avg + ' / 5');
+            $('#count').html(count + ' people have given ' + getMeal() +  ' ' + avg + ' / 5');
         }
     }
 };
@@ -254,3 +254,14 @@ $locationProvider.html5Mode(true);
                       commentListeners : commentListeners
     }
 });
+function getMeal(){
+    var insertTime = new Date();
+    var hours = insertTime.getHours();
+    if(hours < 12){
+        return 'breakfast';
+    }else if(hours >= 12 && hours < 16){
+        return 'lunch';
+    }else if(hours >= 16){
+        return 'dinner';
+    }
+}
