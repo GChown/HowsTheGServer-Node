@@ -98,8 +98,9 @@ module.exports = function(app, connection){
                     res.status(401).send('Login failed');
                 }else{
                     //Insert vote to table
-                    var insert = "INSERT INTO vote(googleid, vote_" + getMeal() + ", date)" +
-                " VALUES(?, ?, DATE(NOW())) ON DUPLICATE KEY UPDATE vote_" + getMeal() + " = ?";
+                    var meal = getMeal();
+                    var insert = "INSERT INTO vote(googleid, vote_" + meal + ", date)" +
+                " VALUES(?, ?, DATE(NOW())) ON DUPLICATE KEY UPDATE vote_" + meal + " = ?";
                     connection.query(insert,
                         [isValid.sub, req.body.vote, req.body.vote],
                         function(err, rows, fields) {
@@ -151,10 +152,10 @@ module.exports = function(app, connection){
         verifyToken(req.body.token, function(idToken){
             if(idToken){
                 var update = "UPDATE user SET username=? WHERE googleid=?;";
-                connection.query(update, [decrypted, req.body.googleid], function(err, rows, fields) {
+                connection.query(update, [decrypted, idToken.sub], function(err, rows, fields) {
                     if(err){
                         console.log('Error updating username!');
-                        console.dir(err);
+                        console.dir([err, decrypted, req.body.googleid]);
                     }
                     if(rows.affectedRows == 1){
                         res.status(200).send();
@@ -322,13 +323,14 @@ module.exports = function(app, connection){
     function getScores(callback){
         var returning = {};
         //Query to find average
-        var avgQuery = "SELECT AVG(vote_" + getMeal() + ") avg FROM vote WHERE date = DATE(NOW())";
+        var meal = getMeal();
+        var avgQuery = "SELECT AVG(vote_" + meal + ") avg FROM vote WHERE date = DATE(NOW())";
         connection.query(avgQuery, function getAvg(err, rows, fields) {
             if (err) console.dir(err);
             returning.avg = rows[0].avg;
         });
         //Now for the count
-        countQuery = "SELECT COUNT(vote_" + getMeal() + ") count FROM vote WHERE date = DATE(NOW());";
+        countQuery = "SELECT COUNT(vote_" + meal + ") count FROM vote WHERE date = DATE(NOW());";
         connection.query(countQuery, function getCount(err, rows, fields) {
             if (err) console.dir(err);
             returning.count = rows[0].count;
