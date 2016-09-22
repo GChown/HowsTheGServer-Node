@@ -15,17 +15,28 @@ app.use(bodyParser.json());
 app.use(express.static(__dirname + '/res/'));
 
 //Create connection details
-var connection = mysql.createConnection({
-        host : config.db.host,
-        user : config.db.user,
-        password : config.db.password,
-        database : config.db.database,
-        charset : 'utf8mb4'
-});
+var sqlDetails =
+{
+    host : config.db.host,
+    user : config.db.user,
+    password : config.db.password,
+    database : config.db.database,
+    charset : 'utf8mb4'
+};
+var connection = mysql.createConnection(sqlDetails);
+
 connection.connect(function(err) {
     if(err){
         console.error('Error connecting to MySQL: ' + err.stack);
         return;
+    }
+});
+connection.on('error', function(err) {
+    console.log('db error', err);
+    if(err.code === 'PROTOCOL_CONNECTION_LOST') {
+        connection = mysql.createConnection(sqlDetails);
+    } else {
+        throw err;
     }
 });
 
