@@ -327,7 +327,7 @@ module.exports = function(app, connection){
         var avgQuery = "SELECT AVG(vote_" + meal + ") avg FROM vote WHERE date = DATE(NOW())";
         connection.query(avgQuery, function getAvg(err, rows, fields) {
             if (err) console.dir(err);
-            returning.avg = rows[0].avg || '0';
+            returning.avg = rows[0] ? rows[0].avg : '0';
         });
         //Now for the count
         countQuery = "SELECT COUNT(vote_" + meal + ") count FROM vote WHERE date = DATE(NOW());";
