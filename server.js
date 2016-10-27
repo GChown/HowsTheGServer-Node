@@ -1,15 +1,17 @@
 var http = require('http'),
+https = require('https'),
 express = require('express'),
 app = express(),
+WebSocketServer = require('websocket').server,
 bodyParser = require("body-parser"),
 mysql = require('mysql');
 const fs = require('fs');
-require('express-ws')(app);
 //Config file
 var config = require('./config');
 //Load the emojis
 var emojis = require('./emojis');
 
+app.all('*', ensureSecure);
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.static(__dirname + '/res/'));
@@ -32,22 +34,37 @@ connection.connect(function(err) {
     }
 });
 connection.on('error', function(err) {
-    console.log('db error', err);
     if(err.code === 'PROTOCOL_CONNECTION_LOST') {
         connection = mysql.createConnection(sqlDetails);
     } else {
         throw err;
+        connection = mysql.createConnection(sqlDetails);
     }
 });
 
-var routes = require('./routes')(app, connection);
 
-// Start the websocket server
-var wsServer = app.listen('65080', function () {
-    console.log('WebSocket server listening');
+var httpsOptions = {
+	key : fs.readFileSync('privkey.pem', 'utf8'),
+	cert : fs.readFileSync('cert.pem', 'utf8')
+};
+
+var server = https.createServer(httpsOptions, app);
+wsServer = new WebSocketServer({
+    httpServer: server,
 });
 
-// Listen for non-websocket connections on port 8080. 
-var server = http.createServer(app).listen(process.env.PORT || '80', function () {
-    console.log("Web server listening");
+//Route HTTP to HTTPS
+function ensureSecure(req, res, next){
+  if(req.secure){
+    return next();
+  };
+  res.redirect('https://' + req.hostname + req.url);
+};
+
+//Listen for HTTP requests so we can redirect them to HTTPS
+http.createServer(app).listen(80);
+server.listen(443, function() {
+	console.log("HTTPS server running");
 });
+
+var routes = require('./routes')(app, connection, wsServer);

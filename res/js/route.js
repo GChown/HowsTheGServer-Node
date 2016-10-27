@@ -213,7 +213,7 @@ $locationProvider.html5Mode(true);
 
     var webSocketHost = location.protocol === 'https:' ? 'wss://' : 'ws://';
     var externalIp = location.hostname;
-    var webSocketUri =  webSocketHost + externalIp + ':65080/votes';
+    var webSocketUri =  webSocketHost + externalIp + '/votes';
     // Establish the WebSocket connection and register event handlers.
     var websocket = new WebSocket(webSocketUri);
 

@@ -6,14 +6,9 @@
   "dependencies": {
     "body-parser": "^1.15.2",
     "express": "^4.14.0",
-    "express-ws": "2.0.0-rc.1",
-    "google-auth-library": "^0.9.8",
+    "jsonwebtoken": "^7.1.9",
     "mysql": "^2.11.1",
-    "passport": "^0.3.2",
-    "passport-google-oauth": "^1.0.0",
-    "pug": "^2.0.0-beta4",
-    "google-auth-library" : "^0.9.8",
-    "jsonwebtoken" : "^7.1.9"
+    "websocket" : "^1.0.23"
   },
   "devDependencies": {},
   "scripts": {

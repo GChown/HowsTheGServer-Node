@@ -5,12 +5,17 @@ crypto = require('crypto'),
 https = require('https');
 const fs = require('fs');
 
-module.exports = function(app, connection){
+module.exports = function(app, connection, ws){
     //Array of connected sockets - notify when update happens
     var socketList = [];
+
     // Votes websocket endpoint
-    app.ws('/votes', function (ws) {
-        socketList.push(ws);
+    wsServer.on('request', function(request) {
+        var connection = request.accept();
+        socketList.push(connection);
+        connection.on('close', function(reasonCode, description) {
+                socketList.splice(socketList.indexOf(connection), 1);
+        });
     });
 
     // Votes http
