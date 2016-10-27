@@ -338,7 +338,7 @@ module.exports = function(app, connection, ws){
         countQuery = "SELECT COUNT(vote_" + meal + ") count FROM vote WHERE date = DATE(NOW());";
         connection.query(countQuery, function getCount(err, rows, fields) {
             if (err) console.dir(err);
-            returning.count = rows[0].count;
+            returning.count = rows ? rows[0].count : '0';
             callback(returning);
         });
     }
