@@ -2,6 +2,7 @@ var http = require('http'),
   https = require('https'),
   express = require('express'),
   app = express(),
+  cors = require('cors'),
   WebSocketServer = require('websocket').server,
   bodyParser = require('body-parser'),
   mysql = require('mysql')
@@ -15,19 +16,20 @@ app.all('*', ensureSecure)
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 app.use(express.static(__dirname + '/res/'))
+app.use(cors());
 
 // Create connection details
-var sqlDetails =
-{
+var sqlDetails = {
+  connectionLimit : 10,
   host: config.db.host,
   user: config.db.user,
   password: config.db.password,
   database: config.db.database,
   charset: 'utf8mb4'
 }
-var connection = mysql.createConnection(sqlDetails)
+var connection = mysql.createPool(sqlDetails);
 
-connection.connect(sqlConnectionError)
+//connection.connect(sqlConnectionError)
 connection.on('error', sqlError)
 
 function sqlConnectionError (err) {

@@ -48,10 +48,7 @@ var HTGApp = angular.module('HTGApp', ['ngRoute'])
         })
       }
     })
-    for (i = 1; i != 6; i++) {
-      $('#vote_' + i).html('⭐')
-    }
-    $('#vote_' + numStars).html('🌟')
+    styleStars(numStars)
   }
   // Initial get vote
   $http.get(address + '/votes').then(function (data) {
@@ -264,3 +261,14 @@ function getMeal () {
     return 'dinner'
   }
 }
+function styleStars (numStars) {
+    $('.star').addClass('notVoted')
+        $('.star').removeClass('voted')
+        for (var i = 1; i <= numStars; i++) {
+            $('#vote_' + i).addClass('voted')
+                $('#vote_' + i).removeClass('notVoted')
+        }
+    $('.notVoted').html('<i class="fa fa-star-o" aria-hidden="true"></i>')
+    $('.voted').html('<i class="fa fa-star" aria-hidden="true"></i>')
+}
+

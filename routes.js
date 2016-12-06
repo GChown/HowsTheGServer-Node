@@ -195,7 +195,7 @@ module.exports = function (app, connection, ws) {
         res.status(500).send()
       } else {
         returning.votes = rows[0].votes
-        var select = 'SELECT COUNT (C_ID) comments FROM comment WHERE googleid = (SELECT googleid FROM user WHERE username=?)'
+        var select = 'SELECT COUNT (C_ID) comments FROM comment WHERE googleid = (SELECT googleid FROM user WHERE username=? collate utf8mb4_unicode_520_ci)'
         connection.query(select, req.params.username, function (err, rows, fields) {
           if (err) {
             console.log('Error getting count of comments for user ' + req.params.username)
@@ -331,17 +331,19 @@ module.exports = function (app, connection, ws) {
     // Query to find average
     var meal = getMeal()
     var avgQuery = 'SELECT AVG (vote_' + meal + ') avg FROM vote WHERE date = DATE (NOW ())'
-    connection.query(avgQuery, function getAvg (err, rows, fields) {
-      if (err) console.dir(err)
-      returning.avg = rows ? rows[0].avg : '0'
-    })
-    // Now for the count
-    countQuery = 'SELECT COUNT (vote_' + meal + ') count FROM vote WHERE date = DATE (NOW ())'
-    connection.query(countQuery, function getCount (err, rows, fields) {
-      if (err) console.dir(err)
-      returning.count = rows ? rows[0].count : '0'
-      callback(returning)
-    })
+    connection.query(avgQuery, getAvg)
+    function getAvg (err, rows, fields) {
+        if (err) console.dir(err)
+        returning.avg = rows ? rows[0].avg : '0'
+        // Now for the count
+        countQuery = 'SELECT COUNT (vote_' + meal + ') count FROM vote WHERE date = DATE (NOW ())'
+        connection.query(countQuery, getCount)
+        function getCount (err, rows, fields) {
+          if (err) console.dir(err)
+          returning.count = rows ? rows[0].count : '0'
+          callback(returning)
+        }
+    }
   }
 
   function getComments (time, callback) {
