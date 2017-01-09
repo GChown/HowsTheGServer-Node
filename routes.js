@@ -187,7 +187,7 @@ module.exports = function (app, connection, ws) {
       return
     }
     var returning = {}
-    var select = 'SELECT COUNT (V_ID) votes FROM vote WHERE googleid = (SELECT googleid FROM user WHERE username=?)'
+    var select = 'SELECT COUNT (V_ID) votes FROM vote WHERE googleid = (SELECT googleid FROM user WHERE username=? collate utf8mb4_unicode_520_ci)'
     connection.query(select, req.params.username, function (err, rows, fields) {
       if (err) {
         console.log('Error getting number of votes for user ' + req.params.username)
@@ -274,7 +274,7 @@ module.exports = function (app, connection, ws) {
         data = JSON.parse(data)
         // The header's key ID will be in the pem file.
         // If not, we need to get a new copy of the public certs.
-        if (typeof data[header.kid] != 'undefined') {
+        if (typeof data[header.kid] !== 'undefined') {
           // check signature and return
           jwt.verify(token, data[header.kid],
             { algorithms: header.alg }, function (err, decoded) {
@@ -333,16 +333,16 @@ module.exports = function (app, connection, ws) {
     var avgQuery = 'SELECT AVG (vote_' + meal + ') avg FROM vote WHERE date = DATE (NOW ())'
     connection.query(avgQuery, getAvg)
     function getAvg (err, rows, fields) {
-        if (err) console.dir(err)
-        returning.avg = rows ? rows[0].avg : '0'
+      if (err) console.dir(err)
+      returning.avg = rows ? rows[0].avg : '0'
         // Now for the count
-        countQuery = 'SELECT COUNT (vote_' + meal + ') count FROM vote WHERE date = DATE (NOW ())'
-        connection.query(countQuery, getCount)
-        function getCount (err, rows, fields) {
-          if (err) console.dir(err)
-          returning.count = rows ? rows[0].count : '0'
-          callback(returning)
-        }
+      countQuery = 'SELECT COUNT (vote_' + meal + ') count FROM vote WHERE date = DATE (NOW ())'
+      connection.query(countQuery, getCount)
+      function getCount (err, rows, fields) {
+        if (err) console.dir(err)
+        returning.count = rows ? rows[0].count : '0'
+        callback(returning)
+      }
     }
   }
 

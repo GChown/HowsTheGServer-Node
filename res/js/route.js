@@ -2,6 +2,18 @@
 var id_token
 var address = location.origin
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/js/sw.js').then(function (registration) {
+      // Registration was successful
+      console.log('ServiceWorker registration successful with scope: ', registration.scope)
+    }).catch(function (err) {
+      // registration failed :(
+      console.log('ServiceWorker registration failed: ', err)
+    })
+  })
+}
+
 var callbackFunc = function () {
   // Signed in with Google
 }
@@ -27,72 +39,74 @@ var HTGApp = angular.module('HTGApp', ['ngRoute'])
       $('#homeLink').addClass('active')
     })
   }).controller('aboutController', function ($scope) {}).controller('voteController', function ($scope, $http, webSocket) {
-  gapi.signin2.render('homeSignIn', {
-    'theme': 'dark',
-    'onsuccess': onSignIn
-  })
+    gapi.signin2.render('homeSignIn', {
+      'theme': 'dark',
+      'onsuccess': onSignIn
+    })
   // Vote update listener
-  $scope.sendVote = function (numStars) {
-    $.post(address + '/rate', {
-      vote: numStars,
-      token: id_token
-    }).fail(function () {
-      gapi.signin2.render('googleSignin', {
-        'theme': 'dark',
-        'onsuccess': onSignIn
-      })
-      $('#loginModal').modal('show')
-      callbackFunc = function () {
-        $.post(address + '/rate', {vote: numStars, token: id_token}).fail(function () {
-          console.log('I dont know any more.')
+    $scope.sendVote = function (numStars) {
+      $.post(address + '/rate', {
+        vote: numStars,
+        token: id_token
+      }).fail(function () {
+        gapi.signin2.render('googleSignin', {
+          'theme': 'dark',
+          'onsuccess': onSignIn
         })
+        $('#loginModal').modal('show')
+        callbackFunc = function () {
+          $.post(address + '/rate', {vote: numStars, token: id_token}).fail(function () {
+            console.log('Tried to send too many times')
+          })
+        }
+      })
+      styleStars(numStars)
+    }
+  // Initial get vote
+    $http.get(address + '/votes').then(function (data) {
+      var rating = data.data
+      var avg = rating.avg
+      var count = rating.count
+    // If nobody has voted yet it'll be null
+      if (avg == null && count == 0) {
+        $('#count').html('Nobody has voted on ' + getMeal() + ' yet!')
+      } else {
+        avg = Math.round(avg * 10) / 10
+        if (count == 1) {
+          $('#count').html(count + ' person has given ' + getMeal() + ' ' + avg + ' / 5')
+        } else {
+          $('#count').html(count + ' people have given ' + getMeal() + ' ' + avg + ' / 5')
+        }
       }
     })
-    styleStars(numStars)
-  }
-  // Initial get vote
-  $http.get(address + '/votes').then(function (data) {
-    var rating = data.data
-    var avg = rating.avg
-    var count = rating.count
+    $scope.voteListener = function (data) {
+      var rating = data
+      var avg = rating.avg
+      var count = rating.count
     // If nobody has voted yet it'll be null
-    if (avg == null && count == 0) {
-      $('#count').html('Nobody has voted on ' + getMeal() + ' yet!')
-    }else {
-      if (count == 1) {
-        $('#count').html(count + ' person has given ' + getMeal() + ' ' + avg + ' / 5')
-      }else {
-        $('#count').html(count + ' people have given ' + getMeal() + ' ' + avg + ' / 5')
+      if (avg == null && count == 0) {
+        $('#count').html('Nobody has voted on ' + getMeal() + ' yet!')
+      } else {
+        avg = Math.round(avg * 10) / 10
+        if (count == 1) {
+          $('#count').html(count + ' person has given ' + getMeal() + ' ' + avg + ' / 5')
+        } else {
+          $('#count').html(count + ' people have given ' + getMeal() + ' ' + avg + ' / 5')
+        }
       }
     }
-  })
-  $scope.voteListener = function (data) {
-    var rating = data
-    var avg = rating.avg
-    var count = rating.count
-    // If nobody has voted yet it'll be null
-    if (avg == null && count == 0) {
-      $('#count').html('Nobody has voted on ' + getMeal() + ' yet!')
-    }else {
-      if (count == 1) {
-        $('#count').html(count + ' person has given ' + getMeal() + ' ' + avg + ' / 5')
-      }else {
-        $('#count').html(count + ' people have given ' + getMeal() + ' ' + avg + ' / 5')
-      }
-    }
-  }
-  webSocket.voteListeners.push($scope.voteListener)
-}).controller('commentsController', function ($scope, $http, webSocket) {
+    webSocket.voteListeners.push($scope.voteListener)
+  }).controller('commentsController', function ($scope, $http, webSocket) {
   // Array of comments
-  $scope.comments = []
+    $scope.comments = []
   // User's profile viewing in modal
-  $scope.profile = {}
+    $scope.profile = {}
   // Retrieve comments
   // On initial request, get all comments from today.
   // Every 10 seconds after, get comments since most recent check.
-  var midnight = new Date()
-  midnight.setHours(0, 0, 0, 0)
-  $http.get(address + '/comment/' + midnight.getTime())
+    var midnight = new Date()
+    midnight.setHours(0, 0, 0, 0)
+    $http.get(address + '/comment/' + midnight.getTime())
     .then(function (comments) {
       comments.data.forEach(function (dataRetrieved) {
         $scope.comments.push({
@@ -102,52 +116,52 @@ var HTGApp = angular.module('HTGApp', ['ngRoute'])
         })
       })
     })
-  $scope.sendComment = function () {
-    var userComment = $('#userComment').val()
-    var sendingData = {
-      text: userComment,
-      token: id_token
-    }
-    $.post(address + '/comment', sendingData).fail(function () {
-      gapi.signin2.render('googleSignin', {
-        'theme': 'dark',
-        'onsuccess': onSignIn
-      })
-      $('#loginModal').modal('show')
-      callbackFunc = function () {
-        var sendingData = {
-          text: userComment,
-          token: id_token
-        }
-        $.post(address + '/comment', sendingData).fail(function () {
-          console.log('I dont know any more.')
-        })
+    $scope.sendComment = function () {
+      var userComment = $('#userComment').val()
+      var sendingData = {
+        text: userComment,
+        token: id_token
       }
-    })
-    $('#userComment').val('')
-  }
-  $scope.commentListener = function (data) {
+      $.post(address + '/comment', sendingData).fail(function () {
+        gapi.signin2.render('googleSignin', {
+          'theme': 'dark',
+          'onsuccess': onSignIn
+        })
+        $('#loginModal').modal('show')
+        callbackFunc = function () {
+          var sendingData = {
+            text: userComment,
+            token: id_token
+          }
+          $.post(address + '/comment', sendingData).fail(function () {
+            console.log('I dont know any more.')
+          })
+        }
+      })
+      $('#userComment').val('')
+    }
+    $scope.commentListener = function (data) {
     // Parse date from server
-    var date = new Date(data.timesent * 1000)
-    $scope.comments.push({
-      text: data.text,
-      timesent: date,
-      username: data.username
-    })
+      var date = new Date(data.timesent * 1000)
+      $scope.comments.push({
+        text: data.text,
+        timesent: date,
+        username: data.username
+      })
     // Must do this to update the ng-repeat comment div
-    $scope.$apply()
-  }
-  $scope.showUser = function (username) {
-    $scope.profile.username = username
-    $http.get(address + '/user/' + username).then(function (data) {
+      $scope.$apply()
+    }
+    $scope.showUser = function (username) {
+      $scope.profile.username = username
+      $http.get(address + '/user/' + username).then(function (data) {
       // Dada?
-      data = data.data
-      $scope.profile.numRatings = data.votes
-      $scope.profile.numComments = data.comments
-    })
-  }
-  webSocket.commentListeners.push($scope.commentListener)
-})
+        data = data.data
+        $scope.profile.numRatings = data.votes
+        $scope.profile.numComments = data.comments
+      })
+    }
+    webSocket.commentListeners.push($scope.commentListener)
+  })
   // Use this filter to reverse order of comments - newest at top
   .filter('reverse', function () {
     return function (items) {
@@ -156,33 +170,7 @@ var HTGApp = angular.module('HTGApp', ['ngRoute'])
   })
   .filter('beautifyTime', function ($interval) {
     return function (dateString) {
-      var returning,
-        timeStamp = new Date(Date.parse(dateString)),
-        now = new Date(),
-        secondsPast = (now.getTime() - timeStamp.getTime()) / 1000
-      if (secondsPast < 60) {
-        return parseInt(secondsPast) + 's'
-      }
-      if (secondsPast < 3600) {
-        return parseInt(secondsPast / 60) + 'm'
-      }
-      if (secondsPast <= 86400) {
-        return parseInt(secondsPast / 3600) + 'h'
-      }
-      if (secondsPast > 86400) {
-        day = timeStamp.getDate()
-        month = timeStamp.toDateString().match(/ [a-zA-Z]*/)[0].replace(' ', '')
-        year = timeStamp.getFullYear() == now.getFullYear() ? '' : ' ' + timeStamp.getFullYear()
-        return day + ' ' + month + year
-      }
-    }
-  })
-  .filter('refreshAuto', function ($filter) {
-    return function (items) {
-      // Update time every second
-      return setTimeout(function () {
-        $filter('beautifyTime')(items)
-      }, 1000)
+      return moment(dateString).fromNow()
     }
   })
   .config(function ($routeProvider, $locationProvider) {
@@ -255,20 +243,19 @@ function getMeal () {
   var hours = insertTime.getHours()
   if (hours < 12) {
     return 'breakfast'
-  }else if (hours >= 12 && hours < 16) {
+  } else if (hours >= 12 && hours < 16) {
     return 'lunch'
-  }else if (hours >= 16) {
+  } else if (hours >= 16) {
     return 'dinner'
   }
 }
 function styleStars (numStars) {
-    $('.star').addClass('notVoted')
-        $('.star').removeClass('voted')
-        for (var i = 1; i <= numStars; i++) {
-            $('#vote_' + i).addClass('voted')
-                $('#vote_' + i).removeClass('notVoted')
-        }
-    $('.notVoted').html('<i class="fa fa-star-o" aria-hidden="true"></i>')
-    $('.voted').html('<i class="fa fa-star" aria-hidden="true"></i>')
+  $('.star').addClass('notVoted')
+  $('.star').removeClass('voted')
+  for (var i = 1; i <= numStars; i++) {
+    $('#vote_' + i).addClass('voted')
+    $('#vote_' + i).removeClass('notVoted')
+  }
+  $('.notVoted').html('<i class="fa fa-star-o" aria-hidden="true"></i>')
+  $('.voted').html('<i class="fa fa-star" aria-hidden="true"></i>')
 }
-
