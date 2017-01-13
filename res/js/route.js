@@ -24,7 +24,10 @@ function onSignIn (googleUser) {
   $('#loginModal').modal('hide')
   // Hide the sign in modal
   // Check if user exists and create if they don't
-  $.post(address + '/checkUser', { token: id_token })
+  $.post(address + '/checkUser', { token: id_token }, function(data){
+        $('#signedin').html('Your username is ' + data)
+        $('#signedin').tooltip(); 
+  })
   callbackFunc()
 }
 
@@ -118,6 +121,10 @@ var HTGApp = angular.module('HTGApp', ['ngRoute'])
     })
     $scope.sendComment = function () {
       var userComment = $('#userComment').val()
+          if(userComment.length > 140){
+             $('#countdown').fadeIn(100).fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)
+                 return
+          }
       var sendingData = {
         text: userComment,
         token: id_token
@@ -160,6 +167,9 @@ var HTGApp = angular.module('HTGApp', ['ngRoute'])
         $scope.profile.numComments = data.comments
       })
     }
+    updateCountdown();
+    $('#userComment').change(updateCountdown);
+    $('#userComment').keyup(updateCountdown);
     webSocket.commentListeners.push($scope.commentListener)
   })
   // Use this filter to reverse order of comments - newest at top
@@ -241,9 +251,9 @@ var HTGApp = angular.module('HTGApp', ['ngRoute'])
 function getMeal () {
   var insertTime = new Date()
   var hours = insertTime.getHours()
-  if (hours < 12) {
+  if (hours < 10) {
     return 'breakfast'
-  } else if (hours >= 12 && hours < 16) {
+  } else if (hours >= 10 && hours < 16) {
     return 'lunch'
   } else if (hours >= 16) {
     return 'dinner'
@@ -256,6 +266,16 @@ function styleStars (numStars) {
     $('#vote_' + i).addClass('voted')
     $('#vote_' + i).removeClass('notVoted')
   }
-  $('.notVoted').html('<i class="fa fa-star-o" aria-hidden="true"></i>')
-  $('.voted').html('<i class="fa fa-star" aria-hidden="true"></i>')
+  $('.notVoted').html('☆')
+  $('.voted').html('★')
+}
+function updateCountdown() {
+    // 140 is the max message length
+    var remaining = 140 - $('#userComment').val().length;
+    $('#countdown').text(remaining);
+    if(remaining <=0){
+        $('#countdown').attr('style', 'color:red') 
+    }else{
+        $('#countdown').attr('style', 'color:black') 
+    }
 }

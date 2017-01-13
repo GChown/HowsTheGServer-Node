@@ -1,2 +1,5 @@
 node_modules
 certs.json
+cert.pem
+privkey.pem
+config.js

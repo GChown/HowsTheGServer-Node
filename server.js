@@ -1,5 +1,5 @@
 var http = require('http'),
-  https = require('https'),
+  https = require('spdy'),
   express = require('express'),
   app = express(),
   cors = require('cors'),

@@ -214,27 +214,27 @@ module.exports = function (app, connection, ws) {
   app.post('/checkUser/', function (req, res) {
     verifyToken(req.body.token, function (idToken) {
       if (idToken) {
-        var emojiName = emojis.random(4)
-        var username = ''
-        emojiName.forEach(function (character) {
-          username += character
-        })
         var get = 'SELECT username FROM user WHERE googleid = ?'
         connection.query(get, [idToken.sub], function (err, rows, fields) {
           if (err) {
             console.log('Error getting user: ' + idToken.sub + err)
             res.status(500).send('Error getting user')
           } else if (rows.length == 1) {
-            res.status(200).send('Exists')
+            res.status(200).send(rows[0].username)
           } else {
-            var insert = 'INSERT INTO user (googleid, username)' +
+              var emojiName = emojis.random(4)
+                  var username = ''
+                  emojiName.forEach(function (character) {
+                      username += character
+                  })
+              var insert = 'INSERT INTO user (googleid, username)' +
               ' VALUES (?, ?) ON DUPLICATE KEY UPDATE googleid = googleid'
             connection.query(insert, [idToken.sub, username], function (err, rows, fields) {
               if (err) {
                 console.log('Error creating user:' + idToken.sub + err)
                 res.status(500).send('Error creating user')
               } else if (rows.affectedRows == 1) {
-                res.status(201).send('Created')
+                res.status(201).send(username)
               }
             })
           }
@@ -393,9 +393,9 @@ module.exports = function (app, connection, ws) {
   function getMeal () {
     var insertTime = new Date()
     var hours = insertTime.getHours()
-    if (hours < 12) {
+    if (hours < 10) {
       return 'b'
-    } else if (hours >= 12 && hours < 16) {
+    } else if (hours >= 10 && hours < 16) {
       return 'l'
     } else if (hours >= 16) {
       return 'd'
