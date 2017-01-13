@@ -33,7 +33,7 @@ module.exports = function (app, connection, ws) {
   // Insert comment
   app.post('/comment', function (req, res) {
     // Check to see if they put in the required params first
-    if (empty([req.body.token, req.body.text]) || req.body.text.length > 140) {
+    if (empty([req.body.token, req.body.text]) || req.body.text.length > 140 || req.body.text.length <= 0) {
       // Send Bad Request error (malformed syntax request)
       res.status(400).send('Malformed Request')
     } else {

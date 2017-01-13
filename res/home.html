@@ -1,8 +1,11 @@
+<div class="center">
 <h1>How's The G?</h1>
-<p>How's The G? lets you rate, comment, and see what other people think about the cafeteria's food.</p>
+<p class="col-lg-12">How's The G? lets you rate, comment, and see what other people think about the cafeteria's food.</p>
 <div id="homeSignIn"></div>
 <br />
+<br />
 <span id="signedin" class="hover" data-toggle="tooltip" title="Your username is 4 random emojis. In the future, you'll be able to change it."></span>
+</div>
 <div class="row">
     <div class="col-lg-7" ng-controller="voteController">
         <h3>Vote</h3>
@@ -19,13 +22,17 @@
     <div>
         <h3>Comments</h3>
         <form>
-        <input type="text" id="userComment"></input>
-    <input type="submit" value="Send comment" id="sendComment" ng-click="sendComment()"/>
-    <span id="countdown"></span>
+            <input type="text" id="userComment" style="z-index:1;"></input>
+        <input type="submit" value="Send" id="sendComment" ng-click="sendComment()"/>
+        <span id="countdown"></span>
 </form>
 </div>
+<br />
 <p class="comment" ng-repeat="comment in comments | reverse">
-    <a data-toggle="modal" data-target="#userModal" ng-click="showUser(comment.username)" href="javascript:void(0)">{{ comment.username }}</a> -  {{ comment.text }} <small style="float:right" class="hover" title=" {{comment.timesent }}">({{ comment.timesent | beautifyTime }})</small></p> 
+    <a data-toggle="modal" data-target="#userModal" ng-click="showUser(comment.username)" href="javascript:void(0)">{{ comment.username }}</a> 
+    -  {{ comment.text }} 
+    <small style="float:right" title="{{comment.timesent }}">({{ comment.timesent | beautifyTime }})</small>
+</p> 
 
 <div class="modal fade" id="userModal" role="dialog">
     <div class="modal-dialog">

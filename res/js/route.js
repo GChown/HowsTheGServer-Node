@@ -4,7 +4,7 @@ var address = location.origin
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('/js/sw.js').then(function (registration) {
+    navigator.serviceWorker.register('sw.js').then(function (registration) {
       // Registration was successful
       console.log('ServiceWorker registration successful with scope: ', registration.scope)
     }).catch(function (err) {
@@ -26,8 +26,10 @@ function onSignIn (googleUser) {
   // Check if user exists and create if they don't
   $.post(address + '/checkUser', { token: id_token }, function(data){
         $('#signedin').html('Your username is ' + data)
+        //Activate helpful tooltip
         $('#signedin').tooltip(); 
   })
+  //Call this function when user has signed in (could be send vote or comment)
   callbackFunc()
 }
 
@@ -124,6 +126,8 @@ var HTGApp = angular.module('HTGApp', ['ngRoute'])
           if(userComment.length > 140){
              $('#countdown').fadeIn(100).fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)
                  return
+          }else if(userComment.length <= 0){
+                return 
           }
       var sendingData = {
         text: userComment,
@@ -141,7 +145,7 @@ var HTGApp = angular.module('HTGApp', ['ngRoute'])
             token: id_token
           }
           $.post(address + '/comment', sendingData).fail(function () {
-            console.log('I dont know any more.')
+            console.log('Tried too many times to send data')
           })
         }
       })
