@@ -5,18 +5,22 @@ var http = require('http'),
   cors = require('cors'),
   WebSocketServer = require('websocket').server,
   bodyParser = require('body-parser'),
-  mysql = require('mysql')
+  mysql = require('mysql'),
+  path = require('path'),
+  morgan = require('morgan')
 const fs = require('fs')
 // Config file
 var config = require('./config')
 // Load the emojis
 var emojis = require('./emojis')
+var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'})
 
 app.all('*', ensureSecure)
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 app.use(express.static(__dirname + '/res/'))
 app.use(cors());
+app.use(morgan('combined', {stream: accessLogStream}))
 
 // Create connection details
 var sqlDetails = {
