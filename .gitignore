@@ -3,3 +3,7 @@ certs.json
 cert.pem
 privkey.pem
 config.js
+access.log
+.DS_Store
+.npmignore
+build/

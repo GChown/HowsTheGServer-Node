@@ -798,31 +798,31 @@ var emojis = [
   '🔵',
   '🏁',
   '🚩',
-  '🎌']
-var config = require(__dirname + '/../config')
-  crypto = require('crypto')
+  '🎌'];
+var config = require(__dirname + '/../config');
+crypto = require('crypto');
 module.exports = {
   random: function (number) {
-    var result = []
+      var result = [];
     for (i = 0, len = number; i < len; i++) {
-      randomEmoji = emojis[Math.floor(Math.random() * emojis.length)]
-      result.push(randomEmoji)
+        randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+        result.push(randomEmoji);
     }
-    return result
+    return result;
   },
   // Get a list of 4 emoijs and a hash of the emojis and the secret key in config.
   genUsername: function () {
-    var secret = config.emoji.key
-    var returning = {}
-    returning.emojis = ''
+      var secret = config.emoji.key;
+      var returning = {};
+      returning.emojis = '';
     // Put emojis in
     this.random(4).forEach(function (emoji) {
-      returning.emojis += emoji
-    })
+        returning.emojis += emoji;
+    });
 
-    var cipher = crypto.createCipher('aes192', secret)
-    returning.hash = cipher.update(returning.emojis, 'utf8', 'hex') + cipher.final('hex')
+    var cipher = crypto.createCipher('aes192', secret);
+    returning.hash = cipher.update(returning.emojis, 'utf8', 'hex') + cipher.final('hex');
 
-    return returning
+    return returning;
   }
-}
+  };
