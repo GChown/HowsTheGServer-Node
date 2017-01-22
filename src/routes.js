@@ -1,5 +1,5 @@
 var jwt = require('jsonwebtoken'),
-  config = require('./config'),
+  config = require(__dirname + '/../config'),
   emojis = require('./emojis'),
   crypto = require('crypto'),
   https = require('https')

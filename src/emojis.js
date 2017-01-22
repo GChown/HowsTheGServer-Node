@@ -799,7 +799,7 @@ var emojis = [
   '🏁',
   '🚩',
   '🎌']
-var config = require('./config'),
+var config = require(__dirname + '/../config')
   crypto = require('crypto')
 module.exports = {
   random: function (number) {

@@ -8,13 +8,16 @@
     "express": "^4.14.0",
     "jsonwebtoken": "^7.1.9",
     "mysql": "^2.11.1",
-    "websocket" : "^1.0.24",
-    "spdy" : "^3.4.4",
-    "cors" : "2.8.1"
+    "websocket": "^1.0.24",
+    "spdy": "^3.4.4",
+    "cors": "2.8.1",
+    "hsts": "2.0.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "grunt": "^0.4.5"
+  },
   "scripts": {
-    "start": "node server.js"
+    "start": "sudo supervisor src/server.js"
   },
   "repository": {
     "type": "git",

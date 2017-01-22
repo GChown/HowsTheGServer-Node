@@ -7,20 +7,27 @@ var http = require('http'),
   bodyParser = require('body-parser'),
   mysql = require('mysql'),
   path = require('path'),
-  morgan = require('morgan')
+  morgan = require('morgan'),
+  hsts = require('hsts')
+
 const fs = require('fs')
 // Config file
-var config = require('./config')
+var config = require(__dirname + '/../config')
 // Load the emojis
 var emojis = require('./emojis')
-var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'})
+var accessLogStream = fs.createWriteStream(path.join(__dirname, '../access.log'), {flags: 'a'})
 
 app.all('*', ensureSecure)
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
-app.use(express.static(__dirname + '/res/'))
+app.use(express.static(__dirname + '/../public/'))
 app.use(cors());
 app.use(morgan('combined', {stream: accessLogStream}))
+app.use(hsts({
+            maxAge: 10886400,
+            includeSubDomains: true,
+            preload: true
+}))
 
 // Create connection details
 var sqlDetails = {
@@ -53,8 +60,8 @@ function sqlError (err) {
 }
 
 var httpsOptions = {
-  key: fs.readFileSync('privkey.pem', 'utf8'),
-  cert: fs.readFileSync('cert.pem', 'utf8')
+  key: fs.readFileSync(__dirname + '/../privkey.pem', 'utf8'),
+  cert: fs.readFileSync(__dirname + '/../cert.pem', 'utf8')
 }
 
 var server = https.createServer(httpsOptions, app)
